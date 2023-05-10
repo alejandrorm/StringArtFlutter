@@ -8,7 +8,7 @@ class Stage {
   final Map<String, Shape> _shapes = {};
   final List<Connection> _connections = [];
   int ticks = 25;
-
+  Offset offset = Offset.zero;
   Hit? _hit;
   Line? _partialLine;
   Circle? _partialCircle;

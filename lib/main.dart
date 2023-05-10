@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:flutter/rendering.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:flutter/material.dart';
 import 'package:string_art/stage.dart';
@@ -14,7 +15,7 @@ import 'package:string_art/stage.dart';
 // 5: Load
 // 6: Undo/Redo
 // 7: Zoom
-// 8: Pan
+// ---- 8: Pan
 // 9: Background color
 
 void main() {
@@ -63,6 +64,7 @@ class MyPainter extends CustomPainter {
       _picture = recorder.endRecording();
     }
 
+    canvas.translate(_stage.offset.dx, _stage.offset.dy);
     canvas.drawPicture(_picture!);
     _stage.renderTemp(canvas);
   }
@@ -113,7 +115,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _pointerDown(PointerDownEvent event) {
     final renderBox = _painter.currentContext!.findRenderObject() as RenderBox;
-    Offset position = renderBox.globalToLocal(event.position);
+    Offset position = renderBox.globalToLocal(event.position) - _stage.offset;
 
     if (_actionSelections[0]) { // line
       _dragStart = position;
@@ -141,7 +143,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _pointerUp(PointerUpEvent event) {
     final renderBox = _painter.currentContext!.findRenderObject() as RenderBox;
-    Offset position = renderBox.globalToLocal(event.position);
+    Offset position = renderBox.globalToLocal(event.position) - _stage.offset;
 
     if (_actionSelections[0]) { // line
       _makeLine(_dragStart, position);
@@ -159,13 +161,19 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _pointerMove(PointerMoveEvent event) {
     final renderBox = _painter.currentContext!.findRenderObject() as RenderBox;
-    Offset position = renderBox.globalToLocal(event.position);
+    Offset position = renderBox.globalToLocal(event.position) - _stage.offset;
 
+    if (_actionSelections.every((element) => !element)) {
+      setState(() {
+        _stage.offset += event.delta;
+      });
+    }
     if (_actionSelections[0] || _actionSelections[2]) {
       setState(() {
         _stage.setTempLine(_dragStart, position);
       });
     }
+
   }
 
   void _undo() {
