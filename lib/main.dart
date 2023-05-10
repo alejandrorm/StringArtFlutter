@@ -363,13 +363,13 @@ class _MyHomePageState extends State<MyHomePage> {
                   borderRadius: const BorderRadius.all(Radius.circular(8)),
                   child: Wrap(
                     children: <Widget>[
-                      TextButton(
-                          onPressed: _undo,
-                          child: const Text('Undo'),
+                      IconButton(
+                        onPressed: _undo,
+                        icon: const Icon(Icons.undo),
                       ),
-                      TextButton(
+                      IconButton(
                         onPressed: _redo,
-                        child: const Text('Redo'),
+                        icon: const Icon(Icons.redo)
                       ),
                     ],
                   )
