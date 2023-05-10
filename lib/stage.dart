@@ -69,6 +69,7 @@ class Stage {
 
   void renderTemp(Canvas canvas) {
     // _hit?.render(canvas);
+    _partialLine?.selected = true;
     _partialLine?.render(canvas, false, true);
     _partialCircle?.render(canvas, false, false);
   }
@@ -123,8 +124,13 @@ class Line extends Shape {
   @override
   void render(Canvas canvas, bool showLabels, bool showControlPoints) {
     Paint paint = Paint();
-    paint.color = color;
-    paint.strokeWidth = 1;
+    if (selected) {
+      paint.color = Colors.blue;
+      paint.strokeWidth = 2;
+    } else {
+      paint.color = color;
+      paint.strokeWidth = 1;
+    }
     canvas.drawLine(start, end, paint);
     if (showLabels) {
       TextPainter textPainter = TextPainter(
