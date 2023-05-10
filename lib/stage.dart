@@ -45,12 +45,21 @@ class Stage {
     isDirty = true;
   }
 
-  void remove(Hit hit) {
-    _shapes.remove(hit.shape.label);
-    _connections.removeWhere((connection) => connection.start.shape == hit.shape ||
-                                             connection.end.shape == hit.shape);
+  void removeShape(Shape shape) {
+    _shapes.remove(shape.label);
+    _connections.removeWhere((connection) => connection.start.shape == shape ||
+                                             connection.end.shape == shape);
     isDirty = true;
   }
+
+  void removeConnection(Connection connection) {
+    _connections.remove(connection);
+    isDirty = true;
+  }
+
+  List<Connection> get connections => _connections;
+
+  List<Shape> get shapes => _shapes.values.toList();
 
   void addConnection(Hit start, Hit end) {
     _connections.add(Connection(start, end));
@@ -94,6 +103,8 @@ class Stage {
 
 abstract class Shape {
   String label;
+  bool selected = false;
+  Color color = Colors.black;
 
   Shape(this.label);
 
@@ -105,7 +116,6 @@ abstract class Shape {
 class Line extends Shape {
   Offset start;
   Offset end;
-  Color color = Colors.black;
   double spacing = 10;
 
   Line(String label, this.start, this.end): super(label);
@@ -130,12 +140,17 @@ class Line extends Shape {
     }
 
     if (showControlPoints) {
-      Paint controlPaint = Paint();
-      controlPaint.color = Colors.red;
-      controlPaint.strokeWidth = 1;
-
       canvas.drawCircle(start, 5, paint);
       canvas.drawCircle(end, 5, paint);
+    }
+
+    if (selected) {
+      Paint controlPaint = Paint();
+      controlPaint.color = Colors.blue;
+      controlPaint.strokeWidth = 1;
+
+      canvas.drawCircle(start, 5, controlPaint);
+      canvas.drawCircle(end, 5, controlPaint);
     }
   }
 
@@ -229,6 +244,8 @@ class Hit {
 class Connection {
   Hit start;
   Hit end;
+  bool selected = false;
+  Color color = Colors.black;
 
   Connection(this.start, this.end);
 
@@ -260,17 +277,24 @@ class Connection {
 
     int tick = 0;
 
+    Paint paint = Paint();
+    paint.color = color;
+
+    if (selected) {
+      paint.strokeWidth = 3;
+    }
+
     while (tick < nTicks1 && tick < nTicks2) {
       if (tick % 2 == 0) {
         double x = l2x0 + (l2x1 - l2x0) * (delta2 * tick);
         double y = l2y0 + (l2y1 - l2y0) * (delta2 * tick);
-        canvas.drawLine(Offset(startX, startY), Offset(x, y), Paint());
+        canvas.drawLine(Offset(startX, startY), Offset(x, y), paint);
         startX = x;
         startY = y;
       } else {
         double x = l1x0 + (l1x1 - l1x0) * (delta1 * tick);
         double y = l1y0 + (l1y1 - l1y0) * (delta1 * tick);
-        canvas.drawLine(Offset(startX, startY), Offset(x, y), Paint());
+        canvas.drawLine(Offset(startX, startY), Offset(x, y), paint);
         startX = x;
         startY = y;
       }

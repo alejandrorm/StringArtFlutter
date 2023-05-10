@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:flutter/material.dart';
 import 'package:string_art/stage.dart';
 
@@ -87,6 +88,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Offset _dragStart = Offset.zero;
   Hit? connectStart;
+  Color _lineColor = Colors.black;
 
   void _makeLine(Offset start, Offset end) {
     setState(() {
@@ -117,7 +119,7 @@ class _MyHomePageState extends State<MyHomePage> {
       Hit? hit = _stage.hitTest(position);
       if (hit != null) {
         setState(() {
-          _stage.remove(hit);
+          _stage.removeShape(hit.shape);
         });
       }
     }
@@ -158,6 +160,132 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _redo() {
 
+  }
+
+  Widget createConnectionListview() {
+    return ListView.builder(
+      itemCount: _stage.connections.length,
+      itemBuilder: (context, index) {
+        Connection connection = _stage.connections[index];
+        return ListTile(
+          title: Text('${connection.start.shape.label} -> ${connection.end.shape.label}'),
+          selected: connection.selected,
+          trailing: IconButton(
+            icon: const Icon(Icons.delete),
+            onPressed: () {
+              setState(() {
+                _stage.removeConnection(connection);
+              });
+            },
+          ),
+          leading: IconButton(
+            icon: const Icon(Icons.circle),
+            color: connection.color,
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (BuildContext context) { return AlertDialog(
+                  title: const Text('Pick a color'),
+                  content: SingleChildScrollView(
+                    child: ColorPicker(
+                      pickerColor: connection.color,
+                      onColorChanged: (Color color) => { setState(() => _lineColor = color) },
+                    ),
+                  ),
+                  actions: <Widget>[
+                    ElevatedButton(
+                      child: const Text('Cancel'),
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                      },
+                    ),
+                    ElevatedButton(
+                      child: const Text('Accept'),
+                      onPressed: () {
+                        setState(() => connection.color = _lineColor);
+                        Navigator.of(context).pop();
+                      },
+                    ),
+                  ],
+                );},
+              );
+            },
+          ),
+          onTap: () {
+            setState(() {
+              bool selected = connection.selected;
+              for (Connection connection in _stage.connections) {
+                connection.selected = false;
+              }
+              connection.selected = !selected;
+            });
+          },
+        );
+      },
+    );
+  }
+
+  Widget createShapeListview() {
+    return ListView.builder(
+      itemCount: _stage.shapes.length,
+      itemBuilder: (context, index) {
+        Shape shape = _stage.shapes[index];
+        return ListTile(
+          title: Text(shape.label),
+          selected: shape.selected,
+          trailing: IconButton(
+            icon: const Icon(Icons.delete),
+            onPressed: () {
+              setState(() {
+                _stage.removeShape(shape);
+              });
+            },
+          ),
+          leading: IconButton(
+            icon: const Icon(Icons.circle),
+            color: shape.color,
+            onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (BuildContext context) { return AlertDialog(
+                    title: const Text('Pick a color'),
+                    content: SingleChildScrollView(
+                      child: ColorPicker(
+                        pickerColor: shape.color,
+                        onColorChanged: (Color color) => { setState(() => _lineColor = color) },
+                      ),
+                    ),
+                    actions: <Widget>[
+                      ElevatedButton(
+                        child: const Text('Cancel'),
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                        },
+                      ),
+                      ElevatedButton(
+                        child: const Text('Accept'),
+                        onPressed: () {
+                          setState(() => shape.color = _lineColor);
+                          Navigator.of(context).pop();
+                        },
+                      ),
+                    ],
+                  );},
+                );
+            },
+          ),
+          onTap: () {
+            setState(() {
+              bool selected = shape.selected;
+              for (Shape shape in _stage.shapes) {
+                shape.selected = false;
+              }
+              shape.selected = !selected;
+            });
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -273,7 +401,18 @@ class _MyHomePageState extends State<MyHomePage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
-                Text('LEFT'),
+                Column(
+                  children: <Widget>[
+                    Text('Shapes'),
+                    SingleChildScrollView(
+                      child: SizedBox(
+                        width: 200,
+                        height: 200,
+                        child: createShapeListview(),
+                      ),
+                    ),
+                  ],
+                ),
                 FittedBox(
                   child: SizedBox(
                     width: 500,
@@ -291,9 +430,20 @@ class _MyHomePageState extends State<MyHomePage> {
                     ),
                   ),
                 ),
-                Text('RIGHT'),
+                Column(
+                  children: <Widget>[
+                    Text('Connections'),
+                    SingleChildScrollView(
+                      child: SizedBox(
+                        width: 200,
+                        height: 200,
+                        child: createConnectionListview(),
+                      ),
+                    ),
+                  ],
+                ),
               ],
-            )
+            ),
           ],
         ),
       ),
