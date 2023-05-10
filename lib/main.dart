@@ -4,6 +4,19 @@ import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:flutter/material.dart';
 import 'package:string_art/stage.dart';
 
+// TODO:
+// 1: Options for connections
+//   a: Wrap around
+//   b: Skip ticks
+// 2: Implement circles
+// 3: Export
+// 4: Save
+// 5: Load
+// 6: Undo/Redo
+// 7: Zoom
+// 8: Pan
+// 9: Background color
+
 void main() {
   runApp(const MyApp());
 }
@@ -164,8 +177,9 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Widget createConnectionListview() {
-    return ListView.builder(
+    return ListView.separated(
       itemCount: _stage.connections.length,
+      separatorBuilder: (context, index) => const Divider(),
       itemBuilder: (context, index) {
         Connection connection = _stage.connections[index];
         return ListTile(
@@ -227,8 +241,9 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Widget createShapeListview() {
-    return ListView.builder(
+    return ListView.separated(
       itemCount: _stage.shapes.length,
+      separatorBuilder: (context, index) => const Divider(),
       itemBuilder: (context, index) {
         Shape shape = _stage.shapes[index];
         return ListTile(
@@ -325,32 +340,32 @@ class _MyHomePageState extends State<MyHomePage> {
         // Here we take the value from the MyHomePage object that was created by
         // the App.build method, and use it to set our appbar title.
         title: Text(widget.title),
-        actions: <Widget>[
-          IconButton(
-            icon: const Text('New'),
-            tooltip: 'Open file',
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('This is a snackbar for open')));
-            },
-          ),
-          IconButton(
-            icon: const Text('Open'),
-            tooltip: 'Save file',
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('This is a snackbar for save')));
-            },
-          ),
-          IconButton(
-            icon: const Text('Save'),
-            tooltip: 'Settings',
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('This is a snackbar for line')));
-            },
-          ),
-        ],
+        // actions: <Widget>[
+        //   IconButton(
+        //     icon: const Text('New'),
+        //     tooltip: 'Open file',
+        //     onPressed: () {
+        //       ScaffoldMessenger.of(context).showSnackBar(
+        //           const SnackBar(content: Text('This is a snackbar for open')));
+        //     },
+        //   ),
+        //   IconButton(
+        //     icon: const Text('Open'),
+        //     tooltip: 'Save file',
+        //     onPressed: () {
+        //       ScaffoldMessenger.of(context).showSnackBar(
+        //           const SnackBar(content: Text('This is a snackbar for save')));
+        //     },
+        //   ),
+        //   IconButton(
+        //     icon: const Text('Save'),
+        //     tooltip: 'Settings',
+        //     onPressed: () {
+        //       ScaffoldMessenger.of(context).showSnackBar(
+        //           const SnackBar(content: Text('This is a snackbar for line')));
+        //     },
+        //   ),
+        // ],
       ),
       body: Center(
         child: Column(
@@ -471,6 +486,46 @@ class _MyHomePageState extends State<MyHomePage> {
           ],
         ),
       ),
+      drawer: Drawer(
+        child: ListView(
+          children: <Widget>[
+            ListTile(
+              leading: const Icon(Icons.add),
+              title: const Text('New'),
+              onTap: () {
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.open_in_browser),
+              title: const Text('Load'),
+              onTap: () {
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.save),
+              title: const Text('Save as...'),
+              onTap: () {
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.save_alt),
+              title: const Text('Export PNG...'),
+              onTap: () {
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              title: const Text('About'),
+              onTap: () {
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        ),
+      )
     );
   }
 }
