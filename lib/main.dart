@@ -81,11 +81,12 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   final GlobalKey _painter = GlobalKey();
   final List<bool> _actionSelections = List.generate(5, (_) => false);
-  final List<bool> _displaySelections = List.generate(2, (_) => false);
+  final List<bool> _displaySelections = <bool>[false, true];
   final Stage _stage = Stage();
   int _lineCount = 0;
 
   Offset _dragStart = Offset.zero;
+  Hit? connectStart;
 
   void _makeLine(Offset start, Offset end) {
     setState(() {
@@ -100,6 +101,14 @@ class _MyHomePageState extends State<MyHomePage> {
 
     if (_actionSelections[0]) { // line
       _dragStart = position;
+    } else if (_actionSelections[2]) { // connect
+      Hit? hit = _stage.hitTest(position);
+      if (hit != null) {
+        setState(() {
+          connectStart = hit;
+          _dragStart = hit.offset;
+        });
+      }
     } else if (_actionSelections[3]) { // select
       setState(() {
         _stage.hitTest(position);
@@ -118,8 +127,17 @@ class _MyHomePageState extends State<MyHomePage> {
     final renderBox = _painter.currentContext!.findRenderObject() as RenderBox;
     Offset position = renderBox.globalToLocal(event.position);
 
-    if (_actionSelections[0]) {
+    if (_actionSelections[0]) { // line
       _makeLine(_dragStart, position);
+    } else if (_actionSelections[2]) { // connect
+      Hit? hit = _stage.hitTest(position);
+      if (hit != null && connectStart != null) {
+        setState(() {
+          _stage.addConnection(connectStart!, hit);
+        });
+      } else {
+        connectStart = null;
+      }
     }
   }
 
@@ -127,7 +145,7 @@ class _MyHomePageState extends State<MyHomePage> {
     final renderBox = _painter.currentContext!.findRenderObject() as RenderBox;
     Offset position = renderBox.globalToLocal(event.position);
 
-    if (_actionSelections[0]) {
+    if (_actionSelections[0] || _actionSelections[2]) {
       setState(() {
         _stage.setTempLine(_dragStart, position);
       });
@@ -218,7 +236,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         }
                       }
                       _actionSelections[index] = !_actionSelections[index];
-                      _stage.controlPoints = _actionSelections[3] || _actionSelections[4];
+                      _stage.controlPoints = _actionSelections[2] || _actionSelections[3] || _actionSelections[4];
                     });
                   },
                   children: const <Widget>[
@@ -252,21 +270,30 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
               ]
             ),
-            FittedBox(
-              child: SizedBox(
-                width: 500,
-                height: 500,
-                child: Listener(
-                  onPointerDown: _pointerDown,
-                  onPointerUp: _pointerUp,
-                  onPointerMove: _pointerMove,
-                  child:CustomPaint(
-                    key: _painter,
-                    painter: MyPainter(_stage),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                Text('LEFT'),
+                FittedBox(
+                  child: SizedBox(
+                    width: 500,
+                    height: 500,
+                    child: Listener(
+                      onPointerDown: _pointerDown,
+                      onPointerUp: _pointerUp,
+                      onPointerMove: _pointerMove,
+                      child: ClipRect(
+                        child: CustomPaint(
+                          key: _painter,
+                          painter: MyPainter(_stage),
+                        ),
+                      )
+                    ),
                   ),
                 ),
-              ),
-            ),
+                Text('RIGHT'),
+              ],
+            )
           ],
         ),
       ),

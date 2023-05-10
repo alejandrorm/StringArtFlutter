@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 class Stage {
   bool isDirty = true;
   bool _showLabels = false;
-  bool _showConnections = false;
+  bool _showConnections = true;
   bool _controlPoints = false;
   final Map<String, Shape> _shapes = {};
-  List<Connection> connections = [];
+  final List<Connection> _connections = [];
   int ticks = 25;
 
   Hit? _hit;
@@ -23,7 +23,7 @@ class Stage {
       shape.render(canvas, _showLabels, _controlPoints);
     }
     if (_showConnections) {
-      for (Connection connection in connections) {
+      for (Connection connection in _connections) {
         connection.render(canvas);
       }
     }
@@ -47,7 +47,15 @@ class Stage {
 
   void remove(Hit hit) {
     _shapes.remove(hit.shape.label);
+    _connections.removeWhere((connection) => connection.start.shape == hit.shape ||
+                                             connection.end.shape == hit.shape);
     isDirty = true;
+  }
+
+  void addConnection(Hit start, Hit end) {
+    _connections.add(Connection(start, end));
+    isDirty = true;
+    _partialLine = null;
   }
 
   void renderTemp(Canvas canvas) {
@@ -98,6 +106,7 @@ class Line extends Shape {
   Offset start;
   Offset end;
   Color color = Colors.black;
+  double spacing = 10;
 
   Line(String label, this.start, this.end): super(label);
 
@@ -158,6 +167,10 @@ class Line extends Shape {
     //   return null;
     // }
     // return Hit(this, Offset(x, y), relativePosition.toInt());
+  }
+
+  double length() {
+    return (start - end).distance;
   }
 }
 
@@ -220,7 +233,49 @@ class Connection {
   Connection(this.start, this.end);
 
   void render(Canvas canvas) {
+    Line l1 = start.shape as Line;
+    Line l2 = end.shape as Line;
 
+    double nTicks1 =  l1.length() / l1.spacing;
+    double delta1 = 1 / nTicks1;
+
+    double nTicks2 =  l2.length() / l2.spacing;
+    double delta2 = 1 / nTicks2;
+
+    double l1x0 = start.relativePosition == 0 ? l1.start.dx : l1.end.dx;
+    double l1y0 = start.relativePosition == 0 ? l1.start.dy : l1.end.dy;
+
+    double l1x1 = start.relativePosition == 1 ? l1.start.dx : l1.end.dx;
+    double l1y1 = start.relativePosition == 1 ? l1.start.dy : l1.end.dy;
+
+    double l2x0 = end.relativePosition == 0 ? l2.start.dx : l2.end.dx;
+    double l2y0 = end.relativePosition == 0 ? l2.start.dy : l2.end.dy;
+
+    double l2x1 = end.relativePosition == 1 ? l2.start.dx : l2.end.dx;
+    double l2y1 = end.relativePosition == 1 ? l2.start.dy : l2.end.dy;
+
+
+    double startX = l1x0;
+    double startY = l1y0;
+
+    int tick = 0;
+
+    while (tick < nTicks1 && tick < nTicks2) {
+      if (tick % 2 == 0) {
+        double x = l2x0 + (l2x1 - l2x0) * (delta2 * tick);
+        double y = l2y0 + (l2y1 - l2y0) * (delta2 * tick);
+        canvas.drawLine(Offset(startX, startY), Offset(x, y), Paint());
+        startX = x;
+        startY = y;
+      } else {
+        double x = l1x0 + (l1x1 - l1x0) * (delta1 * tick);
+        double y = l1y0 + (l1y1 - l1y0) * (delta1 * tick);
+        canvas.drawLine(Offset(startX, startY), Offset(x, y), Paint());
+        startX = x;
+        startY = y;
+      }
+      tick++;
+    }
   }
 }
 
