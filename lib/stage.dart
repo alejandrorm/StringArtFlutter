@@ -105,6 +105,7 @@ abstract class Shape {
   String label;
   bool selected = false;
   Color color = Colors.black;
+  double spacing = 10;
 
   Shape(this.label);
 
@@ -116,7 +117,6 @@ abstract class Shape {
 class Line extends Shape {
   Offset start;
   Offset end;
-  double spacing = 10;
 
   Line(String label, this.start, this.end): super(label);
 

@@ -89,6 +89,7 @@ class _MyHomePageState extends State<MyHomePage> {
   Offset _dragStart = Offset.zero;
   Hit? connectStart;
   Color _lineColor = Colors.black;
+  String _spacing = "25";
 
   void _makeLine(Offset start, Offset end) {
     setState(() {
@@ -242,17 +243,30 @@ class _MyHomePageState extends State<MyHomePage> {
             },
           ),
           leading: IconButton(
-            icon: const Icon(Icons.circle),
-            color: shape.color,
+            icon: const Icon(Icons.edit),
             onPressed: () {
                 showDialog(
                   context: context,
                   builder: (BuildContext context) { return AlertDialog(
-                    title: const Text('Pick a color'),
-                    content: SingleChildScrollView(
-                      child: ColorPicker(
-                        pickerColor: shape.color,
-                        onColorChanged: (Color color) => { setState(() => _lineColor = color) },
+                    title: Text('\'${shape.label}\' properties'),
+                    content: Center(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: <Widget>[
+                          const Text('Spacing: '),
+                          SizedBox(
+                            width: 100,
+                            child:
+                            TextField(
+                              decoration: InputDecoration(
+                                border: OutlineInputBorder(),
+                              ),
+                              keyboardType: TextInputType.number,
+                              controller: TextEditingController(text: shape.spacing.toString()),
+                              onChanged: (value) { setState(() => _spacing = value); print(_spacing); },
+                            )
+                          ),
+                        ],
                       ),
                     ),
                     actions: <Widget>[
@@ -265,8 +279,18 @@ class _MyHomePageState extends State<MyHomePage> {
                       ElevatedButton(
                         child: const Text('Accept'),
                         onPressed: () {
-                          setState(() => shape.color = _lineColor);
-                          Navigator.of(context).pop();
+                          double? newSpacing = double.tryParse(_spacing);
+                          if (newSpacing != null) {
+                            setState(() => shape.spacing = newSpacing);
+                            Navigator.of(context).pop();
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Please enter a valid number'),
+                                  duration: Duration(seconds: 3),
+                                )
+                            );
+                          }
                         },
                       ),
                     ],
