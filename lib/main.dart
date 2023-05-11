@@ -17,6 +17,7 @@ import 'package:string_art/stage.dart';
 // ---- 7: Zoom
 // ---- 8: Pan
 // 9: Background color
+// 10: status bar with size and location
 
 void main() {
   runApp(const MyApp());
@@ -200,13 +201,13 @@ class _MyHomePageState extends State<MyHomePage> {
 
   }
 
-  void _zoom_in() {
+  void _zoomIn() {
     setState(() {
       _zoom *= 1.1;
     });
   }
 
-  void _zoom_out() {
+  void _zoomOut() {
     setState(() {
       _zoom /= 1.1;
     });
@@ -363,6 +364,13 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
+  MouseCursor _getCursor() {
+    if (_actionSelections.every((element) => !element)) {
+     return SystemMouseCursors.move;
+    } else {
+      return SystemMouseCursors.precise;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -459,11 +467,11 @@ class _MyHomePageState extends State<MyHomePage> {
                     child: Wrap(
                       children: <Widget>[
                         IconButton(
-                          onPressed: _zoom_in,
+                          onPressed: _zoomIn,
                           icon: const Icon(Icons.zoom_in),
                         ),
                         IconButton(
-                            onPressed: _zoom_out,
+                            onPressed: _zoomOut,
                             icon: const Icon(Icons.zoom_out)
                         ),
                       ],
@@ -514,24 +522,27 @@ class _MyHomePageState extends State<MyHomePage> {
                     ),
                   ],
                 ),
-                Container(
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.black),
-                    borderRadius: const BorderRadius.all(Radius.circular(8)),
-                  ),
-                  child: SizedBox(
-                    width: 500,
-                    height: 500,
-                    child: Listener(
-                      onPointerDown: _pointerDown,
-                      onPointerUp: _pointerUp,
-                      onPointerMove: _pointerMove,
-                      child: ClipRect(
-                        child: CustomPaint(
-                          key: _painter,
-                          painter: MyPainter(_stage, _zoom),
-                        ),
-                      )
+                MouseRegion(
+                  cursor: _getCursor(),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.black),
+                      borderRadius: const BorderRadius.all(Radius.circular(8)),
+                    ),
+                    child: SizedBox(
+                      width: 500,
+                      height: 500,
+                      child: Listener(
+                        onPointerDown: _pointerDown,
+                        onPointerUp: _pointerUp,
+                        onPointerMove: _pointerMove,
+                        child: ClipRect(
+                          child: CustomPaint(
+                            key: _painter,
+                            painter: MyPainter(_stage, _zoom),
+                          ),
+                        )
+                      ),
                     ),
                   ),
                 ),
