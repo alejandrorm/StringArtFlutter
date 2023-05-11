@@ -7,6 +7,8 @@ class Stage {
   bool _controlPoints = false;
   final Map<String, Shape> _shapes = {};
   final List<Connection> _connections = [];
+  Color _backgroundColor = Colors.white;
+
   int ticks = 25;
   Offset offset = Offset.zero;
   Hit? _hit;
@@ -23,6 +25,8 @@ class Stage {
   }
 
   void render(Canvas canvas) {
+    canvas.drawColor(_backgroundColor, BlendMode.src);
+
     for(Shape shape in _shapes.values) {
       shape.render(canvas, _showLabels, _controlPoints);
     }
@@ -104,6 +108,13 @@ class Stage {
     _controlPoints = value;
     isDirty = true;
   }
+
+  set backgroundColor(Color color) {
+    _backgroundColor = color;
+    isDirty = true;
+  }
+
+  Color get backgroundColor => _backgroundColor;
 }
 
 abstract class Shape {

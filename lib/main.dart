@@ -16,7 +16,7 @@ import 'package:string_art/stage.dart';
 // 6: Undo/Redo
 // ---- 7: Zoom
 // ---- 8: Pan
-// 9: Background color
+// ---- 9: Background color
 // 10: status bar with size and location
 
 void main() {
@@ -109,8 +109,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Offset _dragStart = Offset.zero;
   Hit? connectStart;
-  Color _lineColor = Colors.black;
-  String _spacing = "25";
+  Color _holdingColor = Colors.black;
+  String _holdingSpacing = "25";
 
   void _makeLine(Offset start, Offset end) {
     setState(() {
@@ -241,7 +241,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   content: SingleChildScrollView(
                     child: ColorPicker(
                       pickerColor: connection.color,
-                      onColorChanged: (Color color) => { setState(() => _lineColor = color) },
+                      onColorChanged: (Color color) => { setState(() => _holdingColor = color) },
                     ),
                   ),
                   actions: <Widget>[
@@ -254,7 +254,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     ElevatedButton(
                       child: const Text('Accept'),
                       onPressed: () {
-                        setState(() => connection.color = _lineColor);
+                        setState(() => connection.color = _holdingColor);
                         Navigator.of(context).pop();
                       },
                     ),
@@ -315,7 +315,7 @@ class _MyHomePageState extends State<MyHomePage> {
                               ),
                               keyboardType: TextInputType.number,
                               controller: TextEditingController(text: shape.spacing.toString()),
-                              onChanged: (value) { setState(() => _spacing = value); print(_spacing); },
+                              onChanged: (value) { setState(() => _holdingSpacing = value); print(_holdingSpacing); },
                             )
                           ),
                         ],
@@ -331,7 +331,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       ElevatedButton(
                         child: const Text('Accept'),
                         onPressed: () {
-                          double? newSpacing = double.tryParse(_spacing);
+                          double? newSpacing = double.tryParse(_holdingSpacing);
                           if (newSpacing != null) {
                             setState(() => shape.spacing = newSpacing);
                             Navigator.of(context).pop();
@@ -364,6 +364,140 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
+  Widget createActionBar() {
+    return Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          Material(
+              borderRadius: const BorderRadius.all(Radius.circular(8)),
+              child: Wrap(
+                children: <Widget>[
+                  IconButton(
+                    onPressed: _undo,
+                    icon: const Icon(Icons.undo),
+                  ),
+                  IconButton(
+                      onPressed: _redo,
+                      icon: const Icon(Icons.redo)
+                  ),
+                ],
+              )
+          ),
+          const SizedBox(
+            width: 20,
+          ),
+          ToggleButtons(
+            isSelected: _actionSelections,
+            borderRadius: const BorderRadius.all(Radius.circular(8)),
+            onPressed: (int index) {
+              setState(() {
+                for (int buttonIndex = 0; buttonIndex < _actionSelections.length; buttonIndex++) {
+                  if (buttonIndex != index) {
+                    _actionSelections[buttonIndex] = false;
+                  }
+                }
+                _actionSelections[index] = !_actionSelections[index];
+                _stage.controlPoints = _actionSelections[2] || _actionSelections[3] || _actionSelections[4];
+              });
+            },
+            children: const <Widget>[
+              Text('Line'),
+              Text('Circle'),
+              Text('Connect'),
+              Text('Move'),
+              Text('Delete'),
+            ],
+          ),
+          const SizedBox(
+            width: 20,
+          ),
+          Material(
+              borderRadius: const BorderRadius.all(Radius.circular(8)),
+              child: Wrap(
+                children: <Widget>[
+                  IconButton(
+                    onPressed: _zoomIn,
+                    icon: const Icon(Icons.zoom_in),
+                  ),
+                  IconButton(
+                      onPressed: _zoomOut,
+                      icon: const Icon(Icons.zoom_out)
+                  ),
+                ],
+              )
+          ),
+          OutlinedButton(
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (BuildContext context) { return AlertDialog(
+                    title: const Text('Pick a color'),
+                    content: SingleChildScrollView(
+                      child: ColorPicker(
+                        pickerColor: _stage.backgroundColor,
+                        onColorChanged: (Color color) => { setState(() => _holdingColor = color) },
+                      ),
+                    ),
+                    actions: <Widget>[
+                      ElevatedButton(
+                        child: const Text('Cancel'),
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                        },
+                      ),
+                      ElevatedButton(
+                        child: const Text('Accept'),
+                        onPressed: () {
+                          setState(() => _stage.backgroundColor = _holdingColor);
+                          Navigator.of(context).pop();
+                        },
+                      ),
+                    ],
+                  );},
+                );
+              },
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(
+                  color: Colors.transparent,
+                ),
+              ),
+              child: SizedBox(
+                width: 30,
+                height: 30,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                      color: _stage.backgroundColor,
+                      borderRadius: const BorderRadius.all(Radius.circular(8)),
+                      border: Border.all(color: Colors.black),
+                  ),
+                ),
+              )
+          ),
+          const SizedBox(
+            width: 20,
+          ),
+          ToggleButtons(
+            isSelected: _displaySelections,
+            borderRadius: const BorderRadius.all(Radius.circular(8)),
+            onPressed: (int index) {
+              setState(() {
+                _displaySelections[index] = !_displaySelections[index];
+                if (index == 0) {
+                  _stage.showLabels = _displaySelections[index];
+                } else {
+                  _stage.showConnections = _displaySelections[index];
+                }
+              });
+            },
+            children: const <Widget>[
+              Text('Labels'),
+              Text('Connections'),
+            ],
+          ),
+        ]
+    );
+  }
+
   MouseCursor _getCursor() {
     if (_actionSelections.every((element) => !element)) {
      return SystemMouseCursors.move;
@@ -385,121 +519,12 @@ class _MyHomePageState extends State<MyHomePage> {
         // Here we take the value from the MyHomePage object that was created by
         // the App.build method, and use it to set our appbar title.
         title: Text(widget.title),
-        // actions: <Widget>[
-        //   IconButton(
-        //     icon: const Text('New'),
-        //     tooltip: 'Open file',
-        //     onPressed: () {
-        //       ScaffoldMessenger.of(context).showSnackBar(
-        //           const SnackBar(content: Text('This is a snackbar for open')));
-        //     },
-        //   ),
-        //   IconButton(
-        //     icon: const Text('Open'),
-        //     tooltip: 'Save file',
-        //     onPressed: () {
-        //       ScaffoldMessenger.of(context).showSnackBar(
-        //           const SnackBar(content: Text('This is a snackbar for save')));
-        //     },
-        //   ),
-        //   IconButton(
-        //     icon: const Text('Save'),
-        //     tooltip: 'Settings',
-        //     onPressed: () {
-        //       ScaffoldMessenger.of(context).showSnackBar(
-        //           const SnackBar(content: Text('This is a snackbar for line')));
-        //     },
-        //   ),
-        // ],
       ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                Material(
-                  borderRadius: const BorderRadius.all(Radius.circular(8)),
-                  child: Wrap(
-                    children: <Widget>[
-                      IconButton(
-                        onPressed: _undo,
-                        icon: const Icon(Icons.undo),
-                      ),
-                      IconButton(
-                        onPressed: _redo,
-                        icon: const Icon(Icons.redo)
-                      ),
-                    ],
-                  )
-                ),
-                const SizedBox(
-                  width: 20,
-                ),
-                ToggleButtons(
-                  isSelected: _actionSelections,
-                  borderRadius: const BorderRadius.all(Radius.circular(8)),
-                  onPressed: (int index) {
-                    setState(() {
-                      for (int buttonIndex = 0; buttonIndex < _actionSelections.length; buttonIndex++) {
-                        if (buttonIndex != index) {
-                          _actionSelections[buttonIndex] = false;
-                        }
-                      }
-                      _actionSelections[index] = !_actionSelections[index];
-                      _stage.controlPoints = _actionSelections[2] || _actionSelections[3] || _actionSelections[4];
-                    });
-                  },
-                  children: const <Widget>[
-                    Text('Line'),
-                    Text('Circle'),
-                    Text('Connect'),
-                    Text('Move'),
-                    Text('Delete'),
-                  ],
-                ),
-                const SizedBox(
-                  width: 20,
-                ),
-                Material(
-                    borderRadius: const BorderRadius.all(Radius.circular(8)),
-                    child: Wrap(
-                      children: <Widget>[
-                        IconButton(
-                          onPressed: _zoomIn,
-                          icon: const Icon(Icons.zoom_in),
-                        ),
-                        IconButton(
-                            onPressed: _zoomOut,
-                            icon: const Icon(Icons.zoom_out)
-                        ),
-                      ],
-                    )
-                ),
-                const SizedBox(
-                  width: 20,
-                ),
-                ToggleButtons(
-                  isSelected: _displaySelections,
-                  borderRadius: const BorderRadius.all(Radius.circular(8)),
-                  onPressed: (int index) {
-                    setState(() {
-                      _displaySelections[index] = !_displaySelections[index];
-                      if (index == 0) {
-                        _stage.showLabels = _displaySelections[index];
-                      } else {
-                        _stage.showConnections = _displaySelections[index];
-                      }
-                    });
-                  },
-                  children: const <Widget>[
-                    Text('Labels'),
-                    Text('Connections'),
-                  ],
-                ),
-              ]
-            ),
+            createActionBar(),
             Row(
               children: const [
                 SizedBox(
