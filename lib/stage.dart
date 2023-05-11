@@ -18,6 +18,10 @@ class Stage {
     fontSize: 10,
   );
 
+  void cancelPartialLine() {
+    _partialLine = null;
+  }
+
   void render(Canvas canvas) {
     for(Shape shape in _shapes.values) {
       shape.render(canvas, _showLabels, _controlPoints);
@@ -74,9 +78,9 @@ class Stage {
     _partialCircle?.render(canvas, false, false);
   }
 
-  Hit? hitTest(Offset offset) {
+  Hit? hitTest(Offset offset, double tolerance) {
     for (Shape shape in _shapes.values) {
-      Hit? hit = shape.hitTest(offset);
+      Hit? hit = shape.hitTest(offset, tolerance);
       if (hit != null) {
         _hit = hit;
         return _hit;
@@ -112,7 +116,7 @@ abstract class Shape {
 
   void render(Canvas canvas, bool showLabels, bool showControlPoints);
 
-  Hit? hitTest(Offset offset);
+  Hit? hitTest(Offset offset, double tolerance);
 }
 
 class Line extends Shape {
@@ -161,12 +165,12 @@ class Line extends Shape {
   }
 
   @override
-  Hit? hitTest(Offset offset) {
-    if ((offset.dx - start.dx).abs() < 5 && (offset.dy - start.dy).abs() < 5) {
+  Hit? hitTest(Offset offset, double tolerance) {
+    if ((offset.dx - start.dx).abs() < tolerance && (offset.dy - start.dy).abs() < tolerance) {
       print('Hit $label at 0');
       return Hit(this, start, 0);
     }
-    if ((offset.dx - end.dx).abs() < 5 && (offset.dy - end.dy).abs() < 5) {
+    if ((offset.dx - end.dx).abs() < tolerance && (offset.dy - end.dy).abs() < tolerance) {
       print('Hit $label at 1');
       return Hit(this, end, 1);
     }
@@ -221,10 +225,10 @@ class Circle extends Shape {
   }
 
   @override
-  Hit? hitTest(Offset offset) {
+  Hit? hitTest(Offset offset, double tolerance) {
     double distance = ((center.dx - offset.dx) * (center.dx - offset.dx) +
         (center.dy - offset.dy) * (center.dy - offset.dy));
-    if ((distance - radius.toDouble() * radius.toDouble()).abs() < 25) {
+    if ((distance - radius.toDouble() * radius.toDouble()).abs() < tolerance * tolerance) {
       return Hit(this, center, 0);
     }
     return null;

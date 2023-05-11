@@ -14,7 +14,7 @@ import 'package:string_art/stage.dart';
 // 4: Save
 // 5: Load
 // 6: Undo/Redo
-// 7: Zoom
+// ---- 7: Zoom
 // ---- 8: Pan
 // 9: Background color
 
@@ -51,8 +51,9 @@ class MyPainter extends CustomPainter {
 
   final Stage _stage;
   Picture? _picture;
+  final double _zoom;
 
-  MyPainter(this._stage);
+  MyPainter(this._stage, this._zoom);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -65,6 +66,7 @@ class MyPainter extends CustomPainter {
     }
 
     canvas.translate(_stage.offset.dx, _stage.offset.dy);
+    canvas.scale(_zoom);
     canvas.drawPicture(_picture!);
     _stage.renderTemp(canvas);
   }
@@ -101,6 +103,9 @@ class _MyHomePageState extends State<MyHomePage> {
   final Stage _stage = Stage();
   int _lineCount = 0;
 
+  double _zoom = 1.0;
+  Offset _offset = Offset.zero;
+
   Offset _dragStart = Offset.zero;
   Hit? connectStart;
   Color _lineColor = Colors.black;
@@ -116,23 +121,29 @@ class _MyHomePageState extends State<MyHomePage> {
   void _pointerDown(PointerDownEvent event) {
     final renderBox = _painter.currentContext!.findRenderObject() as RenderBox;
     Offset position = renderBox.globalToLocal(event.position) - _stage.offset;
+    position /= _zoom;
 
     if (_actionSelections[0]) { // line
       _dragStart = position;
     } else if (_actionSelections[2]) { // connect
-      Hit? hit = _stage.hitTest(position);
+      Hit? hit = _stage.hitTest(position, 5 / _zoom);
       if (hit != null) {
         setState(() {
           connectStart = hit;
           _dragStart = hit.offset;
         });
+      } else {
+        setState(() {
+          _stage.cancelPartialLine();
+          connectStart = null;
+        });
       }
     } else if (_actionSelections[3]) { // select
       setState(() {
-        _stage.hitTest(position);
+        _stage.hitTest(position, 5 / _zoom);
       });
     } else if (_actionSelections[4]) { // delete
-      Hit? hit = _stage.hitTest(position);
+      Hit? hit = _stage.hitTest(position, 5 / _zoom);
       if (hit != null) {
         setState(() {
           _stage.removeShape(hit.shape);
@@ -144,17 +155,21 @@ class _MyHomePageState extends State<MyHomePage> {
   void _pointerUp(PointerUpEvent event) {
     final renderBox = _painter.currentContext!.findRenderObject() as RenderBox;
     Offset position = renderBox.globalToLocal(event.position) - _stage.offset;
+    position /= _zoom;
 
     if (_actionSelections[0]) { // line
       _makeLine(_dragStart, position);
     } else if (_actionSelections[2]) { // connect
-      Hit? hit = _stage.hitTest(position);
+      Hit? hit = _stage.hitTest(position, 5 / _zoom);
       if (hit != null && connectStart != null) {
         setState(() {
           _stage.addConnection(connectStart!, hit);
         });
       } else {
-        connectStart = null;
+        setState(() {
+          _stage.cancelPartialLine();
+          connectStart = null;
+        });
       }
     }
   }
@@ -162,6 +177,7 @@ class _MyHomePageState extends State<MyHomePage> {
   void _pointerMove(PointerMoveEvent event) {
     final renderBox = _painter.currentContext!.findRenderObject() as RenderBox;
     Offset position = renderBox.globalToLocal(event.position) - _stage.offset;
+    position /= _zoom;
 
     if (_actionSelections.every((element) => !element)) {
       setState(() {
@@ -182,6 +198,18 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _redo() {
 
+  }
+
+  void _zoom_in() {
+    setState(() {
+      _zoom *= 1.1;
+    });
+  }
+
+  void _zoom_out() {
+    setState(() {
+      _zoom /= 1.1;
+    });
   }
 
   Widget createConnectionListview() {
@@ -335,6 +363,7 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
+
   @override
   Widget build(BuildContext context) {
     // This method is rerun every time setState is called, for instance as done
@@ -425,6 +454,24 @@ class _MyHomePageState extends State<MyHomePage> {
                 const SizedBox(
                   width: 20,
                 ),
+                Material(
+                    borderRadius: const BorderRadius.all(Radius.circular(8)),
+                    child: Wrap(
+                      children: <Widget>[
+                        IconButton(
+                          onPressed: _zoom_in,
+                          icon: const Icon(Icons.zoom_in),
+                        ),
+                        IconButton(
+                            onPressed: _zoom_out,
+                            icon: const Icon(Icons.zoom_out)
+                        ),
+                      ],
+                    )
+                ),
+                const SizedBox(
+                  width: 20,
+                ),
                 ToggleButtons(
                   isSelected: _displaySelections,
                   borderRadius: const BorderRadius.all(Radius.circular(8)),
@@ -446,6 +493,13 @@ class _MyHomePageState extends State<MyHomePage> {
               ]
             ),
             Row(
+              children: const [
+                SizedBox(
+                  height: 20,
+                )
+              ],
+            ),
+            Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
                 Column(
@@ -454,13 +508,17 @@ class _MyHomePageState extends State<MyHomePage> {
                     SingleChildScrollView(
                       child: SizedBox(
                         width: 200,
-                        height: 200,
+                        height: 500,
                         child: createShapeListview(),
                       ),
                     ),
                   ],
                 ),
-                FittedBox(
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.black),
+                    borderRadius: const BorderRadius.all(Radius.circular(8)),
+                  ),
                   child: SizedBox(
                     width: 500,
                     height: 500,
@@ -471,7 +529,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       child: ClipRect(
                         child: CustomPaint(
                           key: _painter,
-                          painter: MyPainter(_stage),
+                          painter: MyPainter(_stage, _zoom),
                         ),
                       )
                     ),
@@ -483,7 +541,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     SingleChildScrollView(
                       child: SizedBox(
                         width: 200,
-                        height: 200,
+                        height: 500,
                         child: createConnectionListview(),
                       ),
                     ),
