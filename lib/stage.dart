@@ -1,13 +1,26 @@
+import 'dart:collection';
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 
 class Stage {
+  static const _textStyle = TextStyle(
+    color: Colors.black,
+    fontSize: 10,
+  );
+
   bool isDirty = true;
   bool _showLabels = false;
   bool _showConnections = true;
   bool _controlPoints = false;
+  Color _backgroundColor = Colors.white;
   final Map<String, Shape> _shapes = {};
   final List<Connection> _connections = [];
-  Color _backgroundColor = Colors.white;
+
+  final Queue<double> _minXStack = Queue();
+  final Queue<double> _minYStack = Queue();
+  final Queue<double> _maxXStack = Queue();
+  final Queue<double> _maxYStack = Queue();
 
   int ticks = 25;
   Offset offset = Offset.zero;
@@ -15,10 +28,15 @@ class Stage {
   Line? _partialLine;
   Circle? _partialCircle;
 
-  static const _textStyle = TextStyle(
-    color: Colors.black,
-    fontSize: 10,
-  );
+  Stage() {
+    _minXStack.add(0);
+    _minYStack.add(0);
+    _maxXStack.add(0);
+    _maxYStack.add(0);
+  }
+
+  Size get size => Size(_maxXStack.last - _minXStack.last,
+                        _maxYStack.last - _minYStack.last);
 
   void cancelPartialLine() {
     _partialLine = null;
@@ -43,6 +61,16 @@ class Stage {
   }
 
   void addLine(String label, Offset start, Offset end) {
+    double minX = min(_minXStack.last, min(start.dx, end.dx));
+    double minY = min(_minYStack.last, min(start.dy, end.dy));
+    double maxX = max(_maxXStack.last, max(start.dx, end.dx));
+    double maxY = max(_maxYStack.last, max(start.dy, end.dy));
+
+    _minXStack.add(minX);
+    _minYStack.add(minY);
+    _maxXStack.add(maxX);
+    _maxYStack.add(maxY);
+
     _shapes[label] = Line(label, start, end);
     _partialLine = null;
     isDirty = true;
@@ -54,6 +82,11 @@ class Stage {
   }
 
   void removeShape(Shape shape) {
+    _minXStack.removeLast();
+    _minYStack.removeLast();
+    _maxXStack.removeLast();
+    _maxYStack.removeLast();
+
     _shapes.remove(shape.label);
     _connections.removeWhere((connection) => connection.start.shape == shape ||
                                              connection.end.shape == shape);
@@ -64,10 +97,6 @@ class Stage {
     _connections.remove(connection);
     isDirty = true;
   }
-
-  List<Connection> get connections => _connections;
-
-  List<Shape> get shapes => _shapes.values.toList();
 
   void addConnection(Hit start, Hit end) {
     _connections.add(Connection(start, end));
@@ -93,6 +122,10 @@ class Stage {
     _hit = null;
     return null;
   }
+
+  List<Connection> get connections => _connections;
+
+  List<Shape> get shapes => _shapes.values.toList();
 
   set showLabels(bool value) {
     _showLabels = value;
