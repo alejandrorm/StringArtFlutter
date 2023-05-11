@@ -77,6 +77,16 @@ class Stage {
   }
 
   void addCircle(String label, Offset center, int radius) {
+    double minX = min(_minXStack.last, center.dx - radius);
+    double minY = min(_minYStack.last, center.dy - radius);
+    double maxX = max(_maxXStack.last, center.dx + radius);
+    double maxY = max(_maxYStack.last, center.dy + radius);
+
+    _minXStack.add(minX);
+    _minYStack.add(minY);
+    _maxXStack.add(maxX);
+    _maxYStack.add(maxY);
+
     _shapes[label] = Circle(label, center, radius);
     isDirty = true;
   }

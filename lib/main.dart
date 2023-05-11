@@ -17,7 +17,7 @@ import 'package:string_art/stage.dart';
 // ---- 7: Zoom
 // ---- 8: Pan
 // ---- 9: Background color
-// 10: status bar with size and location
+// ---- 10: status bar with size and location
 
 void main() {
   runApp(const MyApp());
@@ -498,6 +498,34 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
+  String truncateZoom(double zoom) {
+    if (zoom > 1000) {
+      return (zoom ~/ 100 * 100).toString();
+    } else if (zoom > 100) {
+      return (zoom ~/ 10 * 10).toString();
+    } else if (zoom > 40) {
+      return (zoom ~/ 5 * 5).toString();
+    } else if (zoom > 0.5) {
+      return zoom.toStringAsFixed(1);
+    } else if (zoom > 0.1) {
+      return zoom.toStringAsFixed(2);
+    } else {
+      return "< 0.1";
+    }
+  }
+
+  Widget createBottomBar() {
+    return BottomAppBar(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: <Widget>[
+          Text('Canvas Size: ${_stage.size.width.toStringAsFixed(1)} x ${_stage.size.height.toStringAsFixed(1)}'),
+          Text('Zoom: ${truncateZoom(_zoom * 100)}%'),
+        ],
+      )
+    );
+  }
+
   MouseCursor _getCursor() {
     if (_actionSelections.every((element) => !element)) {
      return SystemMouseCursors.move;
@@ -627,7 +655,8 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
           ],
         ),
-      )
+      ),
+      bottomNavigationBar: createBottomBar(),
     );
   }
 }
