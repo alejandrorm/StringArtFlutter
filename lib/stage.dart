@@ -72,6 +72,10 @@ class Stage {
     _partialLine = Line('temp', start, end);
   }
 
+  void setTempCircle(Offset center, int radius) {
+    _partialCircle = Circle('temp', center, radius);
+  }
+
   void addLine(String label, Offset start, Offset end) {
     double minX = min(_minXStack.last, min(start.dx, end.dx));
     double minY = min(_minYStack.last, min(start.dy, end.dy));
@@ -100,6 +104,7 @@ class Stage {
     _maxYStack.add(maxY);
 
     _shapes[label] = Circle(label, center, radius);
+    _partialCircle = null;
     isDirty = true;
   }
 
@@ -129,7 +134,8 @@ class Stage {
   void renderTemp(Canvas canvas) {
     _partialLine?.selected = true;
     _partialLine?.render(canvas, false, true);
-    _partialCircle?.render(canvas, false, false);
+    _partialCircle?.selected = true;
+    _partialCircle?.render(canvas, false, true);
     hit?.render(canvas);
   }
 
@@ -272,8 +278,14 @@ class Circle extends Shape {
   @override
   void render(Canvas canvas, bool showLabels, bool showControlPoints) {
     Paint paint = Paint();
-    paint.color = Colors.black;
-    paint.strokeWidth = 1;
+    if (selected) {
+      paint.color = Colors.blue;
+      paint.strokeWidth = 2;
+    } else {
+      paint.color = color;
+      paint.strokeWidth = 1;
+    }
+    paint.style = PaintingStyle.stroke;
     canvas.drawCircle(center, radius.toDouble(), paint);
     if (showLabels) {
       TextPainter textPainter = TextPainter(
@@ -286,16 +298,47 @@ class Circle extends Shape {
       textPainter.layout();
       textPainter.paint(canvas, Offset(center.dx, center.dy));
     }
+    if (showControlPoints || selected) {
+      paint.style = PaintingStyle.fill;
+      canvas.drawCircle(center, 5, paint);
+      canvas.drawCircle(center + Offset(radius.toDouble(), 0), 5, paint);
+    }
   }
 
   @override
   Hit? hitTest(Offset offset, double tolerance) {
-    double distance = ((center.dx - offset.dx) * (center.dx - offset.dx) +
-        (center.dy - offset.dy) * (center.dy - offset.dy));
-    if ((distance - radius.toDouble() * radius.toDouble()).abs() < tolerance * tolerance) {
-      return Hit(this, center, 0);
+    double distance = (center - offset).distance;
+    if ((distance - radius.toDouble()).abs() < tolerance) {
+      double t = getIntersection(offset);
+      return Hit(this, getPointForParameter(t), t);
     }
     return null;
+  }
+  
+  Offset getPointForParameter(double t) {
+    double angle = t * 2 * pi;
+    return Offset(center.dx + radius * cos(angle), center.dy + radius * sin(angle)); 
+  }
+
+  double getIntersection(Offset point) {
+    if (point.dy == center.dy) {
+      if (point.dx > center.dx) {
+        return 0.0;
+      } else {
+        return 0.5;
+      }
+    } else {
+      double m = (point.dy - center.dy) / (point.dx - center.dx);
+      double alpha = atan(m);
+      double t = alpha / (2 * pi) + 0.5;
+      if (point.dx > center.dx) {
+        t += 0.5;
+      }
+      if (t > 1.0) {
+        t -= 1.0;
+      }
+      return t;
+    }
   }
 }
 
@@ -303,7 +346,7 @@ class Circle extends Shape {
 class Hit {
   final Shape shape;
   final Offset offset;
-  final int relativePosition;
+  final double relativePosition;
 
   Hit(this.shape, this.offset, this.relativePosition);
 
@@ -327,7 +370,7 @@ class Connection {
 
   Connection(this.start, this.end);
 
-  void render(Canvas canvas) {
+  void _renderLineConnection(Canvas canvas) {
     Line l1 = start.shape as Line;
     Line l2 = end.shape as Line;
 
@@ -377,6 +420,111 @@ class Connection {
         startY = y;
       }
       tick++;
+    }
+  }
+
+  void _renderCircleConnection(Canvas canvas) {
+    Circle c1 = start.shape as Circle;
+    Circle c2 = end.shape as Circle;
+
+    int nTicks1 =  c1.radius * 2 * pi ~/ c1.spacing;
+    double delta1 = 1 / nTicks1;
+
+    int nTicks2 =  c2.radius * 2 * pi ~/ c2.spacing;
+    double delta2 = 1 / nTicks2;
+
+    double t0 = start.relativePosition;
+    double t1 = end.relativePosition;
+
+    t0 = (nTicks1 * t0).toInt() * delta1;
+    t1 = (nTicks2 * t1).toInt() * delta2;
+
+    int tick = 0;
+    Paint paint = Paint();
+    paint.color = color;
+
+    if (selected) {
+      paint.strokeWidth = 3;
+    }
+
+    while (nTicks1 > 0 && nTicks2 > 0) {
+      Offset p1 = c1.getPointForParameter(t0);
+      Offset p2 = c2.getPointForParameter(t1);
+
+      if (tick % 2 == 0) {
+        canvas.drawLine(p1, p2, paint);
+        t0 += delta1;
+        nTicks1--;
+      } else {
+        canvas.drawLine(p2, p1, paint);
+        t1 += delta2;
+        nTicks2--;
+      }
+      tick++;
+    }
+  }
+
+  void _renderLineCircleConnection(Hit line, Hit circle, Canvas canvas) {
+    Line l = line.shape as Line;
+    Circle c = circle.shape as Circle;
+
+    double nTicks =  l.length() / l.spacing;
+    double delta = 1 / nTicks;
+
+    double lx0 = line.relativePosition == 0 ? l.start.dx : l.end.dx;
+    double ly0 = line.relativePosition == 0 ? l.start.dy : l.end.dy;
+
+    double lx1 = line.relativePosition == 1 ? l.start.dx : l.end.dx;
+    double ly1 = line.relativePosition == 1 ? l.start.dy : l.end.dy;
+
+    double cx = c.center.dx;
+    double cy = c.center.dy;
+
+    double r = c.radius.toDouble();
+
+    double startX = lx0;
+    double startY = ly0;
+
+    int tick = 0;
+
+    Paint paint = Paint();
+    paint.color = color;
+
+    if (selected) {
+      paint.strokeWidth = 3;
+    }
+
+    while (tick < nTicks) {
+      if (tick % 2 == 0) {
+        // TODO: adjust for relative position
+        double t = delta * tick;
+        double x = lx0 + (lx1 - lx0) * t;
+        double y = ly0 + (ly1 - ly0) * t;
+        canvas.drawLine(Offset(startX, startY), Offset(x, y), paint);
+        startX = x;
+        startY = y;
+      } else {
+        double t = delta * tick;
+        double angle = t * 2 * pi;
+        double x = cx + r * cos(angle);
+        double y = cy + r * sin(angle);
+        canvas.drawLine(Offset(startX, startY), Offset(x, y), paint);
+        startX = x;
+        startY = y;
+      }
+      tick++;
+    }
+  }
+
+  void render(Canvas canvas) {
+    if (start.shape is Line && end.shape is Line) {
+      _renderLineConnection(canvas);
+    } else if (start.shape is Circle && end.shape is Circle) {
+      _renderCircleConnection(canvas);
+    } else if (start.shape is Line) {
+      _renderLineCircleConnection(start, end, canvas);
+    } else {
+      _renderLineCircleConnection(end, start, canvas);
     }
   }
 }

@@ -11,6 +11,7 @@ import 'package:string_art/stage.dart';
 //   a: Wrap around
 //   b: Skip ticks
 // 2: Implement circles
+//   a: Connect circles
 // 3: Export
 // 4: Save
 // 5: Load
@@ -19,9 +20,20 @@ import 'package:string_art/stage.dart';
 // ---- 8: Pan
 // ---- 9: Background color
 // ---- 10: status bar with size and location
+// 11: Ticks and spacing in edit shape
 
 void main() {
   runApp(const MyApp());
+}
+
+// keep in sync with action bar
+enum Action {
+  line,
+  circle,
+  connect,
+  move,
+  delete,
+  none
 }
 
 class MyApp extends StatelessWidget {
@@ -103,6 +115,7 @@ class _MyHomePageState extends State<MyHomePage> {
   final List<bool> _actionSelections = List.generate(5, (_) => false);
   final List<bool> _displaySelections = <bool>[false, true];
   final Stage _stage = Stage();
+  Action _action = Action.none;
   int _lineCount = 0;
 
   double _zoom = 1.0;
@@ -120,37 +133,57 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  void _makeCircle(Offset center, double radius) {
+    setState(() {
+      String label = 'circle ${_lineCount++}';
+      _stage.addCircle(label, center, radius.toInt());
+    });
+  }
+
   void _pointerDown(PointerDownEvent event) {
     final renderBox = _painter.currentContext!.findRenderObject() as RenderBox;
     Offset position = renderBox.globalToLocal(event.position) - _stage.offset;
     position /= _zoom;
 
-    if (_actionSelections[0]) { // line
-      _dragStart = position;
-    } else if (_actionSelections[2]) { // connect
-      Hit? hit = _stage.hitTest(position, 5 / _zoom);
-      if (hit != null) {
-        setState(() {
-          connectStart = hit;
-          _dragStart = hit.offset;
-        });
-      } else {
-        setState(() {
-          _stage.cancelPartialLine();
-          connectStart = null;
-        });
-      }
-    } else if (_actionSelections[3]) { // select
-      setState(() {
-        _stage.hitTest(position, 5 / _zoom);
-      });
-    } else if (_actionSelections[4]) { // delete
-      Hit? hit = _stage.hitTest(position, 5 / _zoom);
-      if (hit != null) {
-        setState(() {
-          _stage.removeShape(hit.shape);
-        });
-      }
+    switch (_action) {
+      case Action.line:
+        _dragStart = position;
+        break;
+      case Action.circle:
+        _dragStart = position;
+        break;
+      case Action.connect:
+        Hit? hit = _stage.hitTest(position, 5 / _zoom);
+        if (hit != null) {
+          setState(() {
+            connectStart = hit;
+            _dragStart = hit.offset;
+          });
+        } else {
+          setState(() {
+            _stage.cancelPartialLine();
+            connectStart = null;
+          });
+        }
+        break;
+      case Action.move:
+        Hit? hit = _stage.hitTest(position, 5 / _zoom);
+        // if (hit != null) {
+        //   setState(() {
+        //     _stage.startMove(hit);
+        //   });
+        // }
+        break;
+      case Action.delete:
+        Hit? hit = _stage.hitTest(position, 5 / _zoom);
+        if (hit != null) {
+          setState(() {
+            _stage.removeShape(hit.shape);
+          });
+        }
+        break;
+      case Action.none:
+        break;
     }
   }
 
@@ -159,20 +192,26 @@ class _MyHomePageState extends State<MyHomePage> {
     Offset position = renderBox.globalToLocal(event.position) - _stage.offset;
     position /= _zoom;
 
-    if (_actionSelections[0]) { // line
-      _makeLine(_dragStart, position);
-    } else if (_actionSelections[2]) { // connect
-      Hit? hit = _stage.hitTest(position, 5 / _zoom);
-      if (hit != null && connectStart != null) {
-        setState(() {
-          _stage.addConnection(connectStart!, hit);
-        });
-      } else {
-        setState(() {
-          _stage.cancelPartialLine();
-          connectStart = null;
-        });
-      }
+    switch(_action) {
+      case Action.line:
+        _makeLine(_dragStart, position);
+        break;
+      case Action.circle:
+        _makeCircle(_dragStart, (position - _dragStart).distance);
+        break;
+      case Action.connect:
+        Hit? hit = _stage.hitTest(position, 5 / _zoom);
+        if (hit != null && connectStart != null) {
+          setState(() {
+            _stage.addConnection(connectStart!, hit);
+          });
+        } else {
+          setState(() {
+            _stage.cancelPartialLine();
+            connectStart = null;
+          });
+        }
+        break;
     }
   }
 
@@ -181,17 +220,34 @@ class _MyHomePageState extends State<MyHomePage> {
     Offset position = renderBox.globalToLocal(event.position) - _stage.offset;
     position /= _zoom;
 
-    if (_actionSelections.every((element) => !element)) {
-      setState(() {
-        _stage.offset += event.delta;
-      });
-    }
-    if (_actionSelections[0] || _actionSelections[2]) {
-      Hit? hit = _stage.hitTest(position, 5 / _zoom);
-      setState(() {
-        (hit != null && _actionSelections[2]) ? _stage.setHover(hit) : _stage.clearHover();
-        _stage.setTempLine(_dragStart, position);
-      });
+    switch(_action) {
+      case Action.none:
+        setState(() {
+          _stage.offset += event.delta;
+        });
+        break;
+      case Action.line:
+        Hit? hit = _stage.hitTest(position, 5 / _zoom);
+        setState(() {
+          (hit != null && _actionSelections[0]) ? _stage.setHover(hit) : _stage.clearHover();
+          _stage.setTempLine(_dragStart, position);
+        });
+        break;
+      case Action.circle:
+        setState(() {
+          _stage.setTempCircle(_dragStart, (position - _dragStart).distance.toInt());
+        });
+        break;
+      case Action.connect:
+        Hit? hit = _stage.hitTest(position, 5 / _zoom);
+        setState(() {
+          (hit != null) ? _stage.setHover(hit) : _stage
+              .clearHover();
+          _stage.setTempLine(_dragStart, position);
+        });
+        break;
+      default:
+        break;
     }
   }
 
@@ -414,6 +470,11 @@ class _MyHomePageState extends State<MyHomePage> {
                   }
                 }
                 _actionSelections[index] = !_actionSelections[index];
+                if (_actionSelections[index]) {
+                  _action = Action.values[index];
+                } else {
+                  _action = Action.none;
+                }
                 _stage.controlPoints = _actionSelections[3] || _actionSelections[4];
               });
             },
