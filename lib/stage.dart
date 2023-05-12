@@ -24,7 +24,7 @@ class Stage {
 
   int ticks = 25;
   Offset offset = Offset.zero;
-  Hit? _hit;
+  Hit? hit;
   Line? _partialLine;
   Circle? _partialCircle;
 
@@ -40,6 +40,18 @@ class Stage {
 
   void cancelPartialLine() {
     _partialLine = null;
+  }
+
+  void setHover(Hit hit) {
+    this.hit = hit;
+    isDirty = true;
+  }
+
+  void clearHover() {
+    if (hit != null) {
+      hit = null;
+      isDirty = true;
+    }
   }
 
   void render(Canvas canvas) {
@@ -115,21 +127,19 @@ class Stage {
   }
 
   void renderTemp(Canvas canvas) {
-    // _hit?.render(canvas);
     _partialLine?.selected = true;
     _partialLine?.render(canvas, false, true);
     _partialCircle?.render(canvas, false, false);
+    hit?.render(canvas);
   }
 
   Hit? hitTest(Offset offset, double tolerance) {
     for (Shape shape in _shapes.values) {
       Hit? hit = shape.hitTest(offset, tolerance);
       if (hit != null) {
-        _hit = hit;
-        return _hit;
+        return hit;
       }
     }
-    _hit = null;
     return null;
   }
 
@@ -299,8 +309,12 @@ class Hit {
 
   void render(Canvas canvas) {
     Paint paint = Paint();
-    paint.color = Colors.red;
+    paint.color = Colors.white;
     paint.strokeWidth = 1;
+    canvas.drawCircle(offset, 5, paint);
+
+    paint.style = PaintingStyle.stroke;
+    paint.color = Colors.black;
     canvas.drawCircle(offset, 5, paint);
   }
 }

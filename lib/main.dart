@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:flutter/material.dart';
@@ -186,11 +187,27 @@ class _MyHomePageState extends State<MyHomePage> {
       });
     }
     if (_actionSelections[0] || _actionSelections[2]) {
+      Hit? hit = _stage.hitTest(position, 5 / _zoom);
       setState(() {
+        (hit != null && _actionSelections[2]) ? _stage.setHover(hit) : _stage.clearHover();
         _stage.setTempLine(_dragStart, position);
       });
     }
+  }
 
+  void _pointerHover(PointerHoverEvent event) {
+    final renderBox = _painter.currentContext!.findRenderObject() as RenderBox;
+    Offset position = renderBox.globalToLocal(event.position) - _stage.offset;
+    position /= _zoom;
+
+    if (_actionSelections[2] || _actionSelections[3] || _actionSelections[4]) {
+      Hit? hit = _stage.hitTest(position, 5 / _zoom);
+      if (hit != _stage.hit) {
+        setState(() {
+          (hit != null) ? _stage.setHover(hit) : _stage.clearHover();
+        });
+      }
+    }
   }
 
   void _undo() {
@@ -397,7 +414,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   }
                 }
                 _actionSelections[index] = !_actionSelections[index];
-                _stage.controlPoints = _actionSelections[2] || _actionSelections[3] || _actionSelections[4];
+                _stage.controlPoints = _actionSelections[3] || _actionSelections[4];
               });
             },
             children: const <Widget>[
@@ -589,6 +606,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         onPointerDown: _pointerDown,
                         onPointerUp: _pointerUp,
                         onPointerMove: _pointerMove,
+                        onPointerHover: _pointerHover,
                         child: ClipRect(
                           child: CustomPaint(
                             key: _painter,
