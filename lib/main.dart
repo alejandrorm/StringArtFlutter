@@ -9,10 +9,11 @@ import 'package:string_art/stage.dart';
 // TODO:
 // 1: Options for connections
 //   a: Wrap around
-//   b: Skip ticks
-// 2: Implement circles
-//   a: Connect circles
-// 3: Export
+// ----  b: Skip ticks
+// ---- 2: Implement circles
+// ----   a: Connect circles
+// 3: Export PNG
+//    Export template
 // 4: Save
 // 5: Load
 // 6: Undo/Redo
@@ -125,6 +126,8 @@ class _MyHomePageState extends State<MyHomePage> {
   Hit? connectStart;
   Color _holdingColor = Colors.black;
   String _holdingSpacing = "25";
+  int _startStep = 1;
+  int _endStep = 1;
 
   void _makeLine(Offset start, Offset end) {
     setState(() {
@@ -286,6 +289,68 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  void showConnectionEditDialog(Connection connection) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) { return AlertDialog(
+        title: const Text('Edit connection'),
+        content: SingleChildScrollView(
+          child: ListBody(
+            children: <Widget>[
+              const Text('Color'),
+              ColorPicker(
+                pickerColor: connection.color,
+                onColorChanged: (color) {
+                  setState(() {
+                    _holdingColor = color;
+                  });
+                },
+                pickerAreaHeightPercent: 0.8,
+              ),
+              const Text('Source step by'),
+              TextField(
+                controller: TextEditingController(text: connection.startStep.toString()),
+                onChanged: (text) {
+                  setState(() {
+                    _startStep = int.tryParse(text) ?? connection.startStep;
+                  });
+                },
+              ),
+              const Text('Destination step by'),
+              TextField(
+                controller: TextEditingController(text: connection.endStep.toString()),
+                onChanged: (text) {
+                  setState(() {
+                    _endStep = int.tryParse(text) ?? connection.endStep;
+                  });
+                },
+              ),
+            ],
+          ),
+        ),
+        actions: <Widget>[
+          TextButton(
+            child: const Text('Cancel'),
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+          ),
+          TextButton(
+            child: const Text('Save'),
+            onPressed: () {
+              setState(() {
+                connection.color = _holdingColor;
+                connection.startStep = _startStep;
+                connection.endStep = _endStep;
+              });
+              Navigator.of(context).pop();
+            },
+          ),
+        ],
+      ); }
+    );
+  }
+
   Widget createConnectionListview() {
     return ListView.separated(
       itemCount: _stage.connections.length,
@@ -304,36 +369,9 @@ class _MyHomePageState extends State<MyHomePage> {
             },
           ),
           leading: IconButton(
-            icon: const Icon(Icons.circle),
-            color: connection.color,
+            icon: const Icon(Icons.settings),
             onPressed: () {
-              showDialog(
-                context: context,
-                builder: (BuildContext context) { return AlertDialog(
-                  title: const Text('Pick a color'),
-                  content: SingleChildScrollView(
-                    child: ColorPicker(
-                      pickerColor: connection.color,
-                      onColorChanged: (Color color) => { setState(() => _holdingColor = color) },
-                    ),
-                  ),
-                  actions: <Widget>[
-                    ElevatedButton(
-                      child: const Text('Cancel'),
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                      },
-                    ),
-                    ElevatedButton(
-                      child: const Text('Accept'),
-                      onPressed: () {
-                        setState(() => connection.color = _holdingColor);
-                        Navigator.of(context).pop();
-                      },
-                    ),
-                  ],
-                );},
-              );
+              showConnectionEditDialog(connection);
             },
           ),
           onTap: () {
@@ -368,7 +406,7 @@ class _MyHomePageState extends State<MyHomePage> {
             },
           ),
           leading: IconButton(
-            icon: const Icon(Icons.edit),
+            icon: const Icon(Icons.settings),
             onPressed: () {
                 showDialog(
                   context: context,
@@ -643,7 +681,7 @@ class _MyHomePageState extends State<MyHomePage> {
               children: <Widget>[
                 Column(
                   children: <Widget>[
-                    Text('Shapes'),
+                    const Text('Shapes'),
                     SingleChildScrollView(
                       child: SizedBox(
                         width: 200,

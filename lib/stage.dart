@@ -368,6 +368,9 @@ class Connection {
   bool selected = false;
   Color color = Colors.black;
 
+  int startStep = 1;
+  int endStep = 1;
+
   Connection(this.start, this.end);
 
   void _renderLineConnection(Canvas canvas) {
@@ -396,30 +399,31 @@ class Connection {
     double startX = l1x0;
     double startY = l1y0;
 
-    int tick = 0;
-
     Paint paint = Paint();
     paint.color = color;
 
     if (selected) {
-      paint.strokeWidth = 3;
+      paint.strokeWidth = 2;
     }
 
-    while (tick < nTicks1 && tick < nTicks2) {
-      if (tick % 2 == 0) {
-        double x = l2x0 + (l2x1 - l2x0) * (delta2 * tick);
-        double y = l2y0 + (l2y1 - l2y0) * (delta2 * tick);
+    int tick1 = 0;
+    int tick2 = 0;
+    while (tick1 < nTicks1 && tick2 < nTicks2) {
+      if ((tick1 + tick2) % 2 == 0) {
+        double x = l2x0 + (l2x1 - l2x0) * (delta2 * tick2);
+        double y = l2y0 + (l2y1 - l2y0) * (delta2 * tick2);
         canvas.drawLine(Offset(startX, startY), Offset(x, y), paint);
         startX = x;
         startY = y;
+        tick1++;
       } else {
-        double x = l1x0 + (l1x1 - l1x0) * (delta1 * tick);
-        double y = l1y0 + (l1y1 - l1y0) * (delta1 * tick);
+        double x = l1x0 + (l1x1 - l1x0) * (delta1 * tick1);
+        double y = l1y0 + (l1y1 - l1y0) * (delta1 * tick1);
         canvas.drawLine(Offset(startX, startY), Offset(x, y), paint);
         startX = x;
         startY = y;
+        tick2++;
       }
-      tick++;
     }
   }
 
@@ -444,21 +448,21 @@ class Connection {
     paint.color = color;
 
     if (selected) {
-      paint.strokeWidth = 3;
+      paint.strokeWidth = 2;
     }
 
-    while (nTicks1 > 0 && nTicks2 > 0) {
+    while (nTicks1 > 0 || nTicks2 > 0) {
       Offset p1 = c1.getPointForParameter(t0);
       Offset p2 = c2.getPointForParameter(t1);
 
       if (tick % 2 == 0) {
         canvas.drawLine(p1, p2, paint);
-        t0 += delta1;
-        nTicks1--;
+        t0 += delta1 * startStep;
+        nTicks1 -= startStep;
       } else {
         canvas.drawLine(p2, p1, paint);
-        t1 += delta2;
-        nTicks2--;
+        t1 += delta2 * endStep;
+        nTicks2 -= endStep;
       }
       tick++;
     }
