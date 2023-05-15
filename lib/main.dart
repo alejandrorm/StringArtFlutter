@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'dart:math';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
@@ -128,20 +129,23 @@ class _MyHomePageState extends State<MyHomePage> {
   Hit? connectStart;
   Color _holdingColor = Colors.black;
   String _holdingSpacing = "25";
+  String _holdingTicks = "10";
   int _startStep = 1;
   int _endStep = 1;
 
   void _makeLine(Offset start, Offset end) {
     setState(() {
       String label = 'line ${_lineCount++}';
-      _stage.addLine(label, start, end);
+      double spacing = _getAdjustedSpacing((start - end).distance, 25.0);
+      _stage.addLine(label, start, end, spacing);
     });
   }
 
   void _makeCircle(Offset center, double radius) {
     setState(() {
       String label = 'circle ${_lineCount++}';
-      _stage.addCircle(label, center, radius.toInt());
+      double spacing = _getAdjustedSpacing(radius.toInt() * 2 * pi, 25);
+      _stage.addCircle(label, center, radius.toInt(), spacing);
     });
   }
 
@@ -299,6 +303,109 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  double _getAdjustedSpacing(double length, double spacing) {
+    int steps = (length / spacing).floor();
+    double adjustedSpacing = length / steps;
+    return adjustedSpacing;
+  }
+
+  double _getAdjustedSpacingForShape(Shape shape) {
+    double spacing = double.tryParse(_holdingSpacing)?? shape.spacing;
+    double length = 0;
+    if (shape is Circle) length = 2 * pi * shape.radius;
+    if (shape is Line) length = (shape.end - shape.start).distance;
+
+    return _getAdjustedSpacing(length, spacing);
+  }
+
+  int _getSteps(Shape shape) {
+    double spacing = double.tryParse(_holdingSpacing)?? shape.spacing;
+    double length = 0;
+    if (shape is Circle) length = 2 * pi * shape.radius;
+    if (shape is Line) length = (shape.end - shape.start).distance;
+
+    int steps = (length / spacing).floor();
+    return steps;
+  }
+
+  void showShapeEditDialog(Shape shape) {
+    _holdingSpacing = shape.spacing.toString();
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Edit shape \'${shape.label}\''),
+          content: Column(
+            children: [
+              Row(
+
+                children: [
+                  Text('Length: '),
+                  Text(
+                      shape is Line? (shape.end - shape.start).distance.toStringAsFixed(1) : (2 * pi * (shape as Circle).radius).toStringAsFixed(1)
+                  ),
+                ],
+              ),
+              Row(
+                children: [
+                  Text('Spacing: '),
+                  SizedBox(width: 50,
+                    child: TextField(
+                      controller: TextEditingController(
+                          text: shape.spacing.toStringAsFixed(2)),
+                      onChanged: (text) {
+                        setState(() {
+                          _holdingSpacing = text;
+                        });
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              Row(
+                children: [
+                  Text('Adjusted spacing: '),
+                  Text(_getAdjustedSpacingForShape(shape).toStringAsFixed(2)),
+                ],
+              ),
+              Row(
+                children: [
+                  Text('Steps: '),
+                  Text(_getSteps(shape).toString()),
+                ],
+              ),
+            ],
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: const Text('Save'),
+              onPressed: () {
+                double? newSpacing = double.tryParse(_holdingSpacing);
+                if (newSpacing != null) {
+                  setState(() => shape.spacing = _getAdjustedSpacingForShape(shape));
+                  Navigator.of(context).pop();
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Please enter a valid spacing value'),
+                        duration: Duration(seconds: 3),
+                      )
+                  );
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void showConnectionEditDialog(Connection connection) {
     showDialog(
       context: context,
@@ -418,57 +525,7 @@ class _MyHomePageState extends State<MyHomePage> {
           leading: IconButton(
             icon: const Icon(Icons.settings),
             onPressed: () {
-                showDialog(
-                  context: context,
-                  builder: (BuildContext context) { return AlertDialog(
-                    title: Text('\'${shape.label}\' properties'),
-                    content: Center(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: <Widget>[
-                          const Text('Spacing: '),
-                          SizedBox(
-                            width: 100,
-                            child:
-                            TextField(
-                              decoration: InputDecoration(
-                                border: OutlineInputBorder(),
-                              ),
-                              keyboardType: TextInputType.number,
-                              controller: TextEditingController(text: shape.spacing.toString()),
-                              onChanged: (value) { setState(() => _holdingSpacing = value); print(_holdingSpacing); },
-                            )
-                          ),
-                        ],
-                      ),
-                    ),
-                    actions: <Widget>[
-                      ElevatedButton(
-                        child: const Text('Cancel'),
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                        },
-                      ),
-                      ElevatedButton(
-                        child: const Text('Accept'),
-                        onPressed: () {
-                          double? newSpacing = double.tryParse(_holdingSpacing);
-                          if (newSpacing != null) {
-                            setState(() => shape.spacing = newSpacing);
-                            Navigator.of(context).pop();
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Please enter a valid number'),
-                                  duration: Duration(seconds: 3),
-                                )
-                            );
-                          }
-                        },
-                      ),
-                    ],
-                  );},
-                );
+              showShapeEditDialog(shape);
             },
           ),
           onTap: () {

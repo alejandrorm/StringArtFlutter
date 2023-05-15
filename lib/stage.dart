@@ -76,7 +76,7 @@ class Stage {
     _partialCircle = Circle('temp', center, radius);
   }
 
-  void addLine(String label, Offset start, Offset end) {
+  void addLine(String label, Offset start, Offset end, double spacing) {
     double minX = min(_minXStack.last, min(start.dx, end.dx));
     double minY = min(_minYStack.last, min(start.dy, end.dy));
     double maxX = max(_maxXStack.last, max(start.dx, end.dx));
@@ -88,11 +88,12 @@ class Stage {
     _maxYStack.add(maxY);
 
     _shapes[label] = Line(label, start, end);
+    _shapes[label]!.spacing = spacing;
     _partialLine = null;
     isDirty = true;
   }
 
-  void addCircle(String label, Offset center, int radius) {
+  void addCircle(String label, Offset center, int radius, double spacing) {
     double minX = min(_minXStack.last, center.dx - radius);
     double minY = min(_minYStack.last, center.dy - radius);
     double maxX = max(_maxXStack.last, center.dx + radius);
@@ -104,6 +105,7 @@ class Stage {
     _maxYStack.add(maxY);
 
     _shapes[label] = Circle(label, center, radius);
+    _shapes[label]!.spacing = spacing;
     _partialCircle = null;
     isDirty = true;
   }
@@ -412,7 +414,7 @@ class Connection {
 
     int tick1 = 0;
     int tick2 = 0;
-    while (tick1 < nTicks1 && tick2 < nTicks2) {
+    while (tick1 <= nTicks1 && tick2 <= nTicks2) {
       if ((tick1 + tick2) % 2 == 0) {
         double x = l2x0 + (l2x1 - l2x0) * (delta2 * tick2);
         double y = l2y0 + (l2y1 - l2y0) * (delta2 * tick2);
