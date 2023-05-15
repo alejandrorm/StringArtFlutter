@@ -121,6 +121,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
   double _zoom = 1.0;
   Offset _offset = Offset.zero;
+  int _currentX = 0;
+  int _currentY = 0;
 
   Offset _dragStart = Offset.zero;
   Hit? connectStart;
@@ -259,7 +261,15 @@ class _MyHomePageState extends State<MyHomePage> {
     Offset position = renderBox.globalToLocal(event.position) - _stage.offset;
     position /= _zoom;
 
-    if (_actionSelections[2] || _actionSelections[3] || _actionSelections[4]) {
+    if (_action != Action.none) {
+      setState(() {
+        _currentX = position.dx.toInt();
+        _currentY = position.dy.toInt();
+      });
+    }
+
+    if (_action == Action.connect || _action == Action.move ||
+        _action == Action.delete) {
       Hit? hit = _stage.hitTest(position, 5 / _zoom);
       if (hit != _stage.hit) {
         setState(() {
@@ -630,12 +640,30 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
+  Widget getCurrentConstruction() {
+    if (_action == Action.line && _stage.partialLine != null) {
+      return Text('Line from ${_stage.partialLine!.start.dx.toStringAsFixed(1)}, '
+          '${_stage.partialLine!.start.dy.toStringAsFixed(1)} to '
+          '${_stage.partialLine!.end.dx.toStringAsFixed(1)}, '
+          '${_stage.partialLine!.end.dy.toStringAsFixed(1)} '
+          '(length ${_stage.partialLine!.length().toStringAsFixed(1)})');
+    }
+    if (_action == Action.circle && _stage.partialCircle != null) {
+      return Text('Circle at ${_stage.partialCircle!.center.dx.toStringAsFixed(1)}, '
+          '${_stage.partialCircle!.center.dy.toStringAsFixed(1)} with radius '
+          '${_stage.partialCircle!.radius.toStringAsFixed(1)}');
+    }
+    return const SizedBox(width: 300);
+  }
+
   Widget createBottomBar() {
     return BottomAppBar(
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: <Widget>[
           Text('Canvas Size: ${_stage.size.width.toStringAsFixed(1)} x ${_stage.size.height.toStringAsFixed(1)}'),
+          Text('Cursor at ($_currentX, $_currentY)'),
+          getCurrentConstruction(),
           Text('Zoom: ${truncateZoom(_zoom * 100)}%'),
         ],
       )

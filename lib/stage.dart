@@ -174,6 +174,10 @@ class Stage {
   }
 
   Color get backgroundColor => _backgroundColor;
+
+  Line? get partialLine => _partialLine;
+
+  Circle? get partialCircle => _partialCircle;
 }
 
 abstract class Shape {
