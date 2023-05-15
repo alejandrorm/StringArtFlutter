@@ -374,8 +374,11 @@ class Connection {
   bool selected = false;
   Color color = Colors.black;
 
-  int startStep = 1;
-  int endStep = 1;
+  int startSkipBy = 0;
+  int startSkipEvery = 1;
+
+  int endSkipBy = 0;
+  int endSkipEvery = 1;
 
   Connection(this.start, this.end);
 
@@ -463,12 +466,22 @@ class Connection {
 
       if (tick % 2 == 0) {
         canvas.drawLine(p1, p2, paint);
-        t0 += delta1 * startStep;
-        nTicks1 -= startStep;
+        if (nTicks1 % startSkipEvery == 0) {
+          t0 += delta1 * (1 + startSkipBy);
+          nTicks1 -= (1 + startSkipBy);
+        } else {
+          t0 += delta1;
+          nTicks1 -= 1;
+        }
       } else {
         canvas.drawLine(p2, p1, paint);
-        t1 += delta2 * endStep;
-        nTicks2 -= endStep;
+        if (nTicks2 % endSkipEvery == 0) {
+          t1 += delta2 * (1 + endSkipBy);
+          nTicks2 -= (1 + endSkipBy);
+        } else {
+          t1 += delta2;
+          nTicks2 -= 1;
+        }
       }
       tick++;
     }

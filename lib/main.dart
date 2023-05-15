@@ -131,7 +131,9 @@ class _MyHomePageState extends State<MyHomePage> {
   String _holdingSpacing = "25";
   String _holdingTicks = "10";
   int _startStep = 1;
+  int _startSkip = 1;
   int _endStep = 1;
+  int _endSkip = 1;
 
   void _makeLine(Offset start, Offset end) {
     setState(() {
@@ -407,6 +409,12 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void showConnectionEditDialog(Connection connection) {
+    _holdingColor = connection.color;
+    _endSkip = connection.endSkipEvery;
+    _endStep = connection.endSkipBy;
+    _startSkip = connection.startSkipEvery;
+    _startStep = connection.startSkipBy;
+
     showDialog(
       context: context,
       builder: (BuildContext context) { return AlertDialog(
@@ -424,23 +432,63 @@ class _MyHomePageState extends State<MyHomePage> {
                 },
                 pickerAreaHeightPercent: 0.8,
               ),
-              const Text('Source step by'),
-              TextField(
-                controller: TextEditingController(text: connection.startStep.toString()),
-                onChanged: (text) {
-                  setState(() {
-                    _startStep = int.tryParse(text) ?? connection.startStep;
-                  });
-                },
+              const Text('Source'),
+              Row(
+                children: [
+                  Text('Skip by: '),
+                  SizedBox(
+                    width: 50,
+                    child: TextField(
+                      controller: TextEditingController(text: connection.startSkipBy.toString()),
+                      onChanged: (text) {
+                        setState(() {
+                          _startStep = int.tryParse(text) ?? connection.startSkipBy;
+                        });
+                      },
+                    ),
+                  ),
+                  Text(' every: '),
+                  SizedBox(
+                    width: 50,
+                    child: TextField(
+                      controller: TextEditingController(text: connection.startSkipEvery.toString()),
+                      onChanged: (text) {
+                        setState(() {
+                          _startSkip = int.tryParse(text) ?? connection.startSkipEvery;
+                        });
+                      },
+                    ),
+                  ),
+                ],
               ),
-              const Text('Destination step by'),
-              TextField(
-                controller: TextEditingController(text: connection.endStep.toString()),
-                onChanged: (text) {
-                  setState(() {
-                    _endStep = int.tryParse(text) ?? connection.endStep;
-                  });
-                },
+              const Text('Destination'),
+              Row(
+                children: [
+                  Text('Skip by: '),
+                  SizedBox(
+                    width: 50,
+                    child: TextField(
+                      controller: TextEditingController(text: connection.endSkipBy.toString()),
+                      onChanged: (text) {
+                        setState(() {
+                          _endStep = int.tryParse(text) ?? connection.endSkipBy;
+                        });
+                      },
+                    ),
+                  ),
+                  Text(' every: '),
+                  SizedBox(
+                    width: 50,
+                    child: TextField(
+                      controller: TextEditingController(text: connection.endSkipEvery.toString()),
+                      onChanged: (text) {
+                        setState(() {
+                          _endSkip = int.tryParse(text) ?? connection.endSkipEvery;
+                        });
+                      },
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -457,8 +505,10 @@ class _MyHomePageState extends State<MyHomePage> {
             onPressed: () {
               setState(() {
                 connection.color = _holdingColor;
-                connection.startStep = _startStep;
-                connection.endStep = _endStep;
+                connection.startSkipBy = _startStep;
+                connection.endSkipBy = _endStep;
+                connection.endSkipEvery = _endSkip;
+                connection.startSkipEvery = _startSkip;
               });
               Navigator.of(context).pop();
             },
