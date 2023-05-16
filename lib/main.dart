@@ -662,11 +662,11 @@ class _MyHomePageState extends State<MyHomePage> {
               child: Wrap(
                 children: <Widget>[
                   IconButton(
-                    onPressed: _undo,
+                    onPressed: null, //_undo,
                     icon: const Icon(Icons.undo),
                   ),
                   IconButton(
-                      onPressed: _redo,
+                      onPressed:  null, //_redo,
                       icon: const Icon(Icons.redo)
                   ),
                 ],
