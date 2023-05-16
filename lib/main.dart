@@ -8,10 +8,9 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:flutter/material.dart';
 import 'package:string_art/stage.dart';
+import 'package:string_art/custom_icons_icons.dart';
 import 'dart:io';
 import 'dart:async';
-import 'package:path_provider/path_provider.dart';
-import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
 
 import 'package:universal_html/html.dart' as html;
@@ -192,19 +191,6 @@ class _MyHomePageState extends State<MyHomePage> {
             buffer.asUint8List(byteData.offsetInBytes, byteData.lengthInBytes));
       }
     }
-
-    // final pickedDirectory = await FlutterFileDialog.pickDirectory();
-    //
-    // if (pickedDirectory != null) {
-    //   final filePath = await FlutterFileDialog.saveFileToDirectory(
-    //     directory: pickedDirectory!,
-    //     data: Uint8List.fromList(utf8.encode('upa upa papa upa')),
-    //     mimeType: "image/jpeg",
-    //     fileName: "fileName.jpeg",
-    //     replace: true,
-    //   );
-    // }
-
   }
 
   void _makeLine(Offset start, Offset end) {
@@ -713,9 +699,9 @@ class _MyHomePageState extends State<MyHomePage> {
               });
             },
             children: const <Widget>[
-              Text('Line'),
-              Text('Circle'),
-              Text('Connect'),
+              Icon(CustomIcons.flow_line),
+              Icon(CustomIcons.circle_thin),
+              Icon(CustomIcons.connectdevelop),
               Text('Move'),
               Text('Delete'),
             ],
@@ -950,27 +936,27 @@ class _MyHomePageState extends State<MyHomePage> {
       drawer: Drawer(
         child: ListView(
           children: <Widget>[
-            ListTile(
-              leading: const Icon(Icons.add),
-              title: const Text('New'),
-              onTap: () {
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.open_in_browser),
-              title: const Text('Load'),
-              onTap: () {
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.save),
-              title: const Text('Save as...'),
-              onTap: () {
-                Navigator.pop(context);
-              },
-            ),
+            // ListTile(
+            //   leading: const Icon(Icons.add),
+            //   title: const Text('New'),
+            //   onTap: () {
+            //     Navigator.pop(context);
+            //   },
+            // ),
+            // ListTile(
+            //   leading: const Icon(Icons.open_in_browser),
+            //   title: const Text('Load'),
+            //   onTap: () {
+            //     Navigator.pop(context);
+            //   },
+            // ),
+            // ListTile(
+            //   leading: const Icon(Icons.save),
+            //   title: const Text('Save as...'),
+            //   onTap: () {
+            //     Navigator.pop(context);
+            //   },
+            // ),
             ListTile(
               leading: const Icon(Icons.save_alt),
               title: const Text('Export PNG...'),
@@ -979,12 +965,12 @@ class _MyHomePageState extends State<MyHomePage> {
                 Navigator.pop(context);
               },
             ),
-            ListTile(
-              title: const Text('About'),
-              onTap: () {
-                Navigator.pop(context);
-              },
-            ),
+            // ListTile(
+            //   title: const Text('About'),
+            //   onTap: () {
+            //     Navigator.pop(context);
+            //   },
+            // ),
           ],
         ),
       ),
