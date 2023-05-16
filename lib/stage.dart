@@ -246,11 +246,9 @@ class Line extends Shape {
   @override
   Hit? hitTest(Offset offset, double tolerance) {
     if ((offset.dx - start.dx).abs() < tolerance && (offset.dy - start.dy).abs() < tolerance) {
-      print('Hit $label at 0');
       return Hit(this, start, 0);
     }
     if ((offset.dx - end.dx).abs() < tolerance && (offset.dy - end.dy).abs() < tolerance) {
-      print('Hit $label at 1');
       return Hit(this, end, 1);
     }
 

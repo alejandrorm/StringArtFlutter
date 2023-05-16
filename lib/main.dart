@@ -370,13 +370,10 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   double _getAdjustedSpacingForShape(Shape shape) {
-    print("Checking ajdujsted spacing for shape ${shape.label}");
     double spacing = double.tryParse(_holdingSpacing)?? shape.spacing;
     double length = 0;
     if (shape is Circle) length = 2 * pi * shape.radius;
     if (shape is Line) length = (shape.end - shape.start).distance;
-
-    print('Set to ${_getAdjustedSpacing(length, spacing)}');
 
     return _getAdjustedSpacing(length, spacing);
   }
@@ -418,7 +415,6 @@ class _MyHomePageState extends State<MyHomePage> {
                       controller: TextEditingController(
                           text: shape.spacing.toStringAsFixed(2)),
                       onChanged: (text) {
-                        print("Changed to $text");
                         setState(() {
                           _holdingSpacing = text;
                           adjustedSpacingText = _getAdjustedSpacingForShape(shape).toStringAsFixed(2);
