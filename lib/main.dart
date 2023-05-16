@@ -1,11 +1,20 @@
+import 'dart:typed_data';
 import 'dart:ui';
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:flutter/material.dart';
 import 'package:string_art/stage.dart';
+import 'dart:io';
+import 'dart:async';
+import 'package:path_provider/path_provider.dart';
+import 'dart:convert';
+import 'package:file_picker/file_picker.dart';
+
+import 'package:universal_html/html.dart' as html;
 
 // TODO:
 // 1: Options for connections
@@ -27,6 +36,7 @@ import 'package:string_art/stage.dart';
 void main() {
   runApp(const MyApp());
 }
+
 
 // keep in sync with action bar
 enum Action {
@@ -58,7 +68,7 @@ class MyApp extends StatelessWidget {
         // is not restarted.
         primarySwatch: Colors.blue,
       ),
-      home: const MyHomePage(title: 'String Art Editor'),
+      home: MyHomePage(title: 'String Art Editor'),
     );
   }
 }
@@ -107,6 +117,7 @@ class MyHomePage extends StatefulWidget {
   // always marked "final".
 
   final String title;
+  // final CounterStorage storage;
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
@@ -114,6 +125,7 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   final GlobalKey _painter = GlobalKey();
+  String adjustedSpacingText = "10";
   final List<bool> _actionSelections = List.generate(5, (_) => false);
   final List<bool> _displaySelections = <bool>[false, true];
   final Stage _stage = Stage();
@@ -134,6 +146,63 @@ class _MyHomePageState extends State<MyHomePage> {
   int _startSkip = 1;
   int _endStep = 1;
   int _endSkip = 1;
+
+  Future<ByteData?> _getImageData() async {
+    PictureRecorder recorder = PictureRecorder();
+    Canvas recordingCanvas = Canvas(recorder);
+    Rectangle bounds = _stage.boundingBox;
+    recordingCanvas.translate(-bounds.left.toDouble() + 25, -bounds.top.toDouble() + 25);
+    _stage.render(recordingCanvas);
+    Picture picture = recorder.endRecording();
+    var image = await picture.toImage(_stage.size.width.toInt() + 50,
+        _stage.size.height.toInt() + 50);
+
+    return image.toByteData(format: ImageByteFormat.png);
+  }
+
+  Future<void> _saveFile() async {
+    if (kIsWeb) {
+      ByteData? byteData = await _getImageData();
+      final buffer = byteData!.buffer;
+      final blob = html.Blob([buffer.asUint8List(byteData.offsetInBytes, byteData.lengthInBytes)]);
+      final url = html.Url.createObjectUrlFromBlob(blob);
+
+      html.AnchorElement()
+        ..href = url
+        ..download = 'string-art.png'
+        ..type = 'image/png'
+        ..style.display = 'none'
+        ..click();
+    } else if (Platform.isWindows || Platform.isMacOS) {
+      String? outputFile = await FilePicker.platform.saveFile(
+        dialogTitle: 'Please select an output file:',
+        fileName: 'string-art.png',
+        // type: FileType.image,
+        allowedExtensions: ['png'],
+      );
+
+      if (outputFile != null) {
+        ByteData? byteData = await _getImageData();
+
+        final buffer = byteData!.buffer;
+        File(outputFile).writeAsBytes(
+            buffer.asUint8List(byteData.offsetInBytes, byteData.lengthInBytes));
+      }
+    }
+
+    // final pickedDirectory = await FlutterFileDialog.pickDirectory();
+    //
+    // if (pickedDirectory != null) {
+    //   final filePath = await FlutterFileDialog.saveFileToDirectory(
+    //     directory: pickedDirectory!,
+    //     data: Uint8List.fromList(utf8.encode('upa upa papa upa')),
+    //     mimeType: "image/jpeg",
+    //     fileName: "fileName.jpeg",
+    //     replace: true,
+    //   );
+    // }
+
+  }
 
   void _makeLine(Offset start, Offset end) {
     setState(() {
@@ -312,10 +381,13 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   double _getAdjustedSpacingForShape(Shape shape) {
+    print("Checking ajdujsted spacing for shape ${shape.label}");
     double spacing = double.tryParse(_holdingSpacing)?? shape.spacing;
     double length = 0;
     if (shape is Circle) length = 2 * pi * shape.radius;
     if (shape is Line) length = (shape.end - shape.start).distance;
+
+    print('Set to ${_getAdjustedSpacing(length, spacing)}');
 
     return _getAdjustedSpacing(length, spacing);
   }
@@ -331,7 +403,8 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void showShapeEditDialog(Shape shape) {
-    _holdingSpacing = shape.spacing.toString();
+    _holdingSpacing = shape.spacing.toStringAsFixed(2);
+    adjustedSpacingText = _holdingSpacing;
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -356,18 +429,21 @@ class _MyHomePageState extends State<MyHomePage> {
                       controller: TextEditingController(
                           text: shape.spacing.toStringAsFixed(2)),
                       onChanged: (text) {
+                        print("Changed to $text");
                         setState(() {
                           _holdingSpacing = text;
+                          adjustedSpacingText = _getAdjustedSpacingForShape(shape).toStringAsFixed(2);
                         });
                       },
                     ),
                   ),
+                  Text(' Adjusted at $adjustedSpacingText'),
                 ],
               ),
               Row(
                 children: [
                   Text('Adjusted spacing: '),
-                  Text(_getAdjustedSpacingForShape(shape).toStringAsFixed(2)),
+                  Text(adjustedSpacingText),
                 ],
               ),
               Row(
@@ -896,6 +972,7 @@ class _MyHomePageState extends State<MyHomePage> {
               leading: const Icon(Icons.save_alt),
               title: const Text('Export PNG...'),
               onTap: () {
+                _saveFile();
                 Navigator.pop(context);
               },
             ),

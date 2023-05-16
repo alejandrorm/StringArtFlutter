@@ -38,6 +38,9 @@ class Stage {
   Size get size => Size(_maxXStack.last - _minXStack.last,
                         _maxYStack.last - _minYStack.last);
 
+  Rectangle get boundingBox =>
+      Rectangle(_minXStack.last, _minYStack.last, size.width, size.height);
+
   void cancelPartialLine() {
     _partialLine = null;
   }
@@ -424,14 +427,22 @@ class Connection {
         canvas.drawLine(Offset(startX, startY), Offset(x, y), paint);
         startX = x;
         startY = y;
-        tick1++;
+        if (tick1 % startSkipEvery == 0) {
+          tick1 += (1 + startSkipBy);
+        } else {
+          tick1++;
+        }
       } else {
         double x = l1x0 + (l1x1 - l1x0) * (delta1 * tick1);
         double y = l1y0 + (l1y1 - l1y0) * (delta1 * tick1);
         canvas.drawLine(Offset(startX, startY), Offset(x, y), paint);
         startX = x;
         startY = y;
-        tick2++;
+        if (tick2 % endSkipEvery == 0) {
+          tick2 += (1 + endSkipBy);
+        } else {
+          tick2++;
+        }
       }
     }
   }
