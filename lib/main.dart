@@ -19,19 +19,10 @@ import 'package:universal_html/html.dart' as html;
 // TODO:
 // 1: Options for connections
 //   a: Wrap around
-// ----  b: Skip ticks
-// ---- 2: Implement circles
-// ----   a: Connect circles
-// 3: Export PNG
 //    Export template
 // 4: Save
 // 5: Load
 // 6: Undo/Redo
-// ---- 7: Zoom
-// ---- 8: Pan
-// ---- 9: Background color
-// ---- 10: status bar with size and location
-// 11: Ticks and spacing in edit shape
 
 void main() {
   runApp(const MyApp());
@@ -173,7 +164,7 @@ class _MyHomePageState extends State<MyHomePage> {
         ..type = 'image/png'
         ..style.display = 'none'
         ..click();
-    } else if (Platform.isWindows || Platform.isMacOS) {
+    } else if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
       String? outputFile = await FilePicker.platform.saveFile(
         dialogTitle: 'Please select an output file:',
         fileName: 'string-art.png',
@@ -186,6 +177,18 @@ class _MyHomePageState extends State<MyHomePage> {
 
         final buffer = byteData!.buffer;
         File(outputFile).writeAsBytes(
+            buffer.asUint8List(byteData.offsetInBytes, byteData.lengthInBytes));
+      }
+    } else {
+      String? outputFile = await FilePicker.platform.getDirectoryPath(
+        dialogTitle: 'Please select an output folder:',
+      );
+
+      if (outputFile != null) {
+        ByteData? byteData = await _getImageData();
+
+        final buffer = byteData!.buffer;
+        File('$outputFile\\string-art.png').writeAsBytes(
             buffer.asUint8List(byteData.offsetInBytes, byteData.lengthInBytes));
       }
     }
