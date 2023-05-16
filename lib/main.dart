@@ -130,8 +130,7 @@ class _MyHomePageState extends State<MyHomePage> {
   Offset _dragStart = Offset.zero;
   Hit? connectStart;
   Color _holdingColor = Colors.black;
-  String _holdingSpacing = "25";
-  String _holdingTicks = "10";
+  double _holdingSpacing = 0;
   int _startStep = 1;
   int _startSkip = 1;
   int _endStep = 1;
@@ -364,13 +363,14 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   double _getAdjustedSpacing(double length, double spacing) {
+    if (spacing > length) spacing = length;
+
     int steps = (length / spacing).floor();
     double adjustedSpacing = length / steps;
     return adjustedSpacing;
   }
 
-  double _getAdjustedSpacingForShape(Shape shape) {
-    double spacing = double.tryParse(_holdingSpacing)?? shape.spacing;
+  double _getAdjustedSpacingForShape(Shape shape, double spacing) {
     double length = 0;
     if (shape is Circle) length = 2 * pi * shape.radius;
     if (shape is Line) length = (shape.end - shape.start).distance;
@@ -378,19 +378,42 @@ class _MyHomePageState extends State<MyHomePage> {
     return _getAdjustedSpacing(length, spacing);
   }
 
+  // double _getAdjustedSpacingForSteps(Shape shape , int steps) {
+  //   double length = 0;
+  //   if (shape is Circle) length = 2 * pi * shape.radius;
+  //   if (shape is Line) length = (shape.end - shape.start).distance;
+  //
+  //   double lb = 0;
+  //   double ub = length;
+  //   double spacing = (ub + lb) / 2;
+  //   int stepsTarget = steps * 1000;
+  //   int currentSteps = ((length / spacing) * 1000).round();
+  //
+  //   while (currentSteps != stepsTarget) {
+  //     if (currentSteps > stepsTarget) {
+  //       lb = spacing;
+  //     } else {
+  //       ub = spacing;
+  //     }
+  //     spacing = (ub + lb) / 2;
+  //     currentSteps = ((length / spacing) * 1000).round();
+  //   }
+  //
+  //   return spacing;
+  // }
+
   int _getSteps(Shape shape) {
-    double spacing = double.tryParse(_holdingSpacing)?? shape.spacing;
     double length = 0;
     if (shape is Circle) length = 2 * pi * shape.radius;
     if (shape is Line) length = (shape.end - shape.start).distance;
 
-    int steps = (length / spacing).floor();
+    int steps = (length / shape.spacing).round();
     return steps;
   }
 
   void showShapeEditDialog(Shape shape) {
-    _holdingSpacing = shape.spacing.toStringAsFixed(2);
-    adjustedSpacingText = _holdingSpacing;
+    _holdingSpacing = shape.spacing;
+    adjustedSpacingText = _holdingSpacing.toStringAsFixed(3);
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -410,31 +433,59 @@ class _MyHomePageState extends State<MyHomePage> {
               Row(
                 children: [
                   Text('Spacing: '),
-                  SizedBox(width: 50,
+                  SizedBox(width: 100, height: 30,
                     child: TextField(
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                      ),
                       controller: TextEditingController(
-                          text: shape.spacing.toStringAsFixed(2)),
+                          text: shape.spacing.toStringAsFixed(3)),
                       onChanged: (text) {
-                        setState(() {
-                          _holdingSpacing = text;
-                          adjustedSpacingText = _getAdjustedSpacingForShape(shape).toStringAsFixed(2);
-                        });
+                        var space = double.tryParse(text);
+                        if (space != null && space > 0) {
+                          setState(() {
+                            shape.spacing = _getAdjustedSpacingForShape(shape, space);
+                            adjustedSpacingText =
+                                shape.spacing.toStringAsFixed(3);
+                          });
+                        }
                       },
                     ),
                   ),
-                  Text(' Adjusted at $adjustedSpacingText'),
                 ],
               ),
-              Row(
-                children: [
-                  Text('Adjusted spacing: '),
-                  Text(adjustedSpacingText),
-                ],
-              ),
+              // Row(
+              //   children: [
+              //     Text('Adjusted spacing: '),
+              //     Text(adjustedSpacingText),
+              //   ],
+              // ),
               Row(
                 children: [
                   Text('Steps: '),
-                  Text(_getSteps(shape).toString()),
+                  SizedBox(width: 100, height: 30,
+                    child: TextField(
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                      ),
+                      controller: TextEditingController(
+                          text: _getSteps(shape).toString()),
+                      onChanged: (text) {
+                        var steps = int.tryParse(text);
+                        if (steps != null && steps > 0) {
+                          setState(() {
+                            if (shape is Line) {
+                              shape.spacing = (shape.end - shape.start).distance / steps;
+                            } else if (shape is Circle) {
+                              shape.spacing = (2 * pi * shape.radius) / steps;
+                            }
+                            // shape.spacing = _getAdjustedSpacingForSteps(shape, steps);
+                            adjustedSpacingText = shape.spacing.toStringAsFixed(3);
+                          });
+                        }
+                      },
+                    ),
+                  ), //Text(_getSteps(shape).toString()),
                 ],
               ),
             ],
@@ -443,24 +494,28 @@ class _MyHomePageState extends State<MyHomePage> {
             TextButton(
               child: const Text('Cancel'),
               onPressed: () {
+                setState(() {
+                  shape.spacing = _holdingSpacing;
+                });
                 Navigator.of(context).pop();
               },
             ),
             TextButton(
-              child: const Text('Save'),
+              child: const Text('OK'),
               onPressed: () {
-                double? newSpacing = double.tryParse(_holdingSpacing);
-                if (newSpacing != null) {
-                  setState(() => shape.spacing = _getAdjustedSpacingForShape(shape));
-                  Navigator.of(context).pop();
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Please enter a valid spacing value'),
-                        duration: Duration(seconds: 3),
-                      )
-                  );
-                }
+                Navigator.of(context).pop();
+                // double? newSpacing = double.tryParse(_holdingSpacing);
+                // if (newSpacing != null) {
+                //   setState(() => shape.spacing = _getAdjustedSpacingForShape(shape));
+                //   Navigator.of(context).pop();
+                // } else {
+                //   ScaffoldMessenger.of(context).showSnackBar(
+                //       const SnackBar(
+                //         content: Text('Please enter a valid spacing value'),
+                //         duration: Duration(seconds: 3),
+                //       )
+                //   );
+                // }
               },
             ),
           ],
