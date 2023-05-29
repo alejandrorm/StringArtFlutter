@@ -226,6 +226,13 @@ class Line extends Shape {
       textPainter.layout();
       textPainter.paint(canvas, Offset((start.dx + end.dx) / 2,
           (start.dy + end.dy) / 2));
+
+      double delta = spacing / length();
+
+      for (double i = 0; i < 1; i += delta) {
+        Offset point = Offset.lerp(start, end, i)!;
+        canvas.drawCircle(point, 2, paint);
+      }
     }
 
     if (showControlPoints) {
@@ -304,6 +311,13 @@ class Circle extends Shape {
       );
       textPainter.layout();
       textPainter.paint(canvas, Offset(center.dx, center.dy));
+
+      double delta = spacing / (2 * pi * radius);
+
+      for (double i = 0; i < 1; i += delta) {
+        Offset point = getPointForParameter(i);
+        canvas.drawCircle(point, 2, paint);
+      }
     }
     if (showControlPoints || selected) {
       paint.style = PaintingStyle.fill;
