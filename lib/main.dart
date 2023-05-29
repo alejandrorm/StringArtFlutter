@@ -135,6 +135,10 @@ class _MyHomePageState extends State<MyHomePage> {
   int _startSkip = 1;
   int _endStep = 1;
   int _endSkip = 1;
+  double _startRelativeStart = 0;
+  double _endRelativeStart = 0;
+  double _startRelativeEnd = 1;
+  double _endRelativeEnd = 1;
 
   Future<ByteData?> _getImageData() async {
     PictureRecorder recorder = PictureRecorder();
@@ -530,6 +534,10 @@ class _MyHomePageState extends State<MyHomePage> {
     _endStep = connection.endSkipBy;
     _startSkip = connection.startSkipEvery;
     _startStep = connection.startSkipBy;
+    _startRelativeStart = connection.startRelativeStart;
+    _endRelativeStart = connection.endRelativeStart;
+    _startRelativeEnd = connection.startRelativeEnd;
+    _endRelativeEnd = connection.endRelativeEnd;
 
     showDialog(
       context: context,
@@ -549,6 +557,34 @@ class _MyHomePageState extends State<MyHomePage> {
                 pickerAreaHeightPercent: 0.8,
               ),
               const Text('Source'),
+              Row(
+                children: [
+                  Text("Relative start: "),
+                  SizedBox(
+                      width: 50,
+                      child: TextField(
+                        controller: TextEditingController(text: connection.startRelativeStart.toString()),
+                        onChanged: (text) {
+                          setState(() {
+                            _startRelativeStart = double.tryParse(text) ?? connection.startRelativeStart;
+                          });
+                        },
+                      )
+                  ),
+                  Text(" end: "),
+                  SizedBox(
+                      width: 50,
+                      child: TextField(
+                        controller: TextEditingController(text: connection.startRelativeEnd.toString()),
+                        onChanged: (text) {
+                          setState(() {
+                            _startRelativeEnd = double.tryParse(text) ?? connection.startRelativeEnd;
+                          });
+                        },
+                      )
+                  ),
+                ],
+              ),
               Row(
                 children: [
                   Text('Skip by: '),
@@ -578,6 +614,34 @@ class _MyHomePageState extends State<MyHomePage> {
                 ],
               ),
               const Text('Destination'),
+              Row(
+                children: [
+                  Text("Relative start: "),
+                  SizedBox(
+                      width: 50,
+                      child: TextField(
+                        controller: TextEditingController(text: connection.endRelativeStart.toString()),
+                        onChanged: (text) {
+                          setState(() {
+                            _endRelativeStart = double.tryParse(text) ?? connection.endRelativeStart;
+                          });
+                        },
+                      )
+                  ),
+                  Text(" end: "),
+                  SizedBox(
+                      width: 50,
+                      child: TextField(
+                        controller: TextEditingController(text: connection.endRelativeEnd.toString()),
+                        onChanged: (text) {
+                          setState(() {
+                            _endRelativeEnd = double.tryParse(text) ?? connection.endRelativeEnd;
+                          });
+                        },
+                      )
+                  ),
+                ],
+              ),
               Row(
                 children: [
                   Text('Skip by: '),
@@ -625,6 +689,10 @@ class _MyHomePageState extends State<MyHomePage> {
                 connection.endSkipBy = _endStep;
                 connection.endSkipEvery = _endSkip;
                 connection.startSkipEvery = _startSkip;
+                connection.startRelativeStart = _startRelativeStart;
+                connection.endRelativeStart = _endRelativeStart;
+                connection.startRelativeEnd = _startRelativeEnd;
+                connection.endRelativeEnd = _endRelativeEnd;
               });
               Navigator.of(context).pop();
             },

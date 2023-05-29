@@ -371,7 +371,11 @@ class Hit {
 
 class Connection {
   Hit start;
+  double startRelativeStart = 0;
+  double startRelativeEnd = 1;
   Hit end;
+  double endRelativeStart = 0;
+  double endRelativeEnd = 1;
   bool selected = false;
   Color color = Colors.black;
 
@@ -406,8 +410,6 @@ class Connection {
     double l2y1 = end.relativePosition == 1 ? l2.start.dy : l2.end.dy;
 
 
-    double startX = l1x0;
-    double startY = l1y0;
 
     Paint paint = Paint();
     paint.color = color;
@@ -416,10 +418,17 @@ class Connection {
       paint.strokeWidth = 2;
     }
 
-    int tick1 = 0;
-    int tick2 = 0;
-    while (tick1 <= nTicks1 && tick2 <= nTicks2) {
-      if ((tick1 + tick2) % 2 == 0) {
+    int tick1 = (nTicks1 * startRelativeStart).round();
+    int tick2 = (nTicks2 * endRelativeStart).round();
+    int endTick1 = min(nTicks1.round(), (nTicks1 * startRelativeEnd).round());
+    int endTick2 = min(nTicks2.round(), (nTicks2 * endRelativeEnd).round());
+
+    double startX = l1x0 + (l1x1 - l1x0) * (delta1 * tick1);
+    double startY = l1y0 + (l1y1 - l1y0) * (delta1 * tick1);
+
+    int step = 0;
+    while (tick1 <= endTick1 && tick2 <= endTick2) {
+      if (step % 2 == 0) { //((tick1 + tick2) % 2 == 0) {
         double x = l2x0 + (l2x1 - l2x0) * (delta2 * tick2);
         double y = l2y0 + (l2y1 - l2y0) * (delta2 * tick2);
         canvas.drawLine(Offset(startX, startY), Offset(x, y), paint);
@@ -442,6 +451,7 @@ class Connection {
           tick2++;
         }
       }
+      step++;
     }
   }
 
